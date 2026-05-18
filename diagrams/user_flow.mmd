@@ -1,0 +1,39 @@
+graph TD
+  classDef default fill:#f8fafc,stroke:#334155,stroke-width:1px,color:#1e293b
+  classDef error fill:#fef2f2,stroke:#dc2626,stroke-width:1px,color:#991b1b
+  classDef success fill:#f0fdf4,stroke:#16a34a,stroke-width:1px,color:#166534
+
+  startNode(["Iniciar Programa"])
+  inputTheme["Informar Tema de Pesquisa"]
+  validateTheme{"Tema Válido/Claro?"}
+  invalidThemeError["Erro: Tema Inválido ou Ambíguo"]:::error
+  searchDocs[["Buscar 10 Documentos Relevantes (Artigos, Estudos de Caso, etc.)"]]
+  docsFound{"Documentos Encontrados?"}
+  noDocsError["Erro: Nenhum Documento Relevante Encontrado"]:::error
+  processDocs[["Processar e Sintetizar Documentos (Montar Memória)"]]
+  generateContent[["Gerar Conteúdo Autoral (TCC, Estudo de Caso, Artigo)"]]
+  reviewContent{"Conteúdo Satisfatório?"}
+  refineContent["Refinar Conteúdo"]
+  exportContent["Exportar Conteúdo em Formato Científico Padrão"]
+  successMsg(["Conteúdo Gerado e Exportado com Sucesso!"]):::success
+  endNode(["Fim do Processo"])
+
+  startNode --> inputTheme
+  inputTheme --> validateTheme
+  validateTheme -->|"Sim"| searchDocs
+  validateTheme -->|"Não"| invalidThemeError
+  invalidThemeError -.-> inputTheme
+
+  searchDocs --> docsFound
+  docsFound -->|"Sim"| processDocs
+  docsFound -->|"Não"| noDocsError
+  noDocsError -.-> inputTheme
+
+  processDocs --> generateContent
+  generateContent --> reviewContent
+  reviewContent -->|"Sim"| exportContent
+  reviewContent -->|"Não"| refineContent
+  refineContent -.-> generateContent
+
+  exportContent --> successMsg
+  successMsg --> endNode

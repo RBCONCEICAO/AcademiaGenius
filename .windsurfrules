@@ -1,0 +1,4 @@
+# Cascade Flow Instructions
+- Prioritize Agentic Tool Use: When a user provides a theme, first use the research_tool to fetch top 10 academic sources.
+- Scientific Rigor: If the content sounds like standard LLM filler, rewrite to focus on academic tone and technical specificity.
+- Tool Priorities: SearchAPI (fetch), PaperParser (extract), LLM_Synthesizer (rewrite), LaTeX_Formatter (export).

@@ -1,0 +1,6 @@
+# Rules for Academic Research Generator
+- Use @src/services/research_agent.py for search operations.
+- Always validate against @docs/ABNT_standards.md for formatting.
+- Use @src/types/research_models.ts to ensure data consistency between React and Python.
+- Prevent plagiarism by enforcing 'synthesized writing' mode.
+- Ignore files: ["**/__pycache__", "**/.next", "**/.venv", "**/node_modules", "**/dist", "**/.env"].

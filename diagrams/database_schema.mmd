@@ -1,0 +1,87 @@
+erDiagram
+  generation_request ||--o{ retrieved_document : "includes"
+  generation_request ||--o{ knowledge_chunk : "generates"
+  generation_request ||--o{ generated_content : "produces"
+  document ||--o{ retrieved_document : "is_retrieved_for"
+  document ||--o{ knowledge_chunk : "provides"
+  document ||--o{ document_author : "has"
+  author ||--o{ document_author : "is_part_of"
+  source ||--o{ document : "publishes"
+
+  generation_request {
+    uuid id PK "Unique identifier for the generation request"
+    text theme_input "The user-provided theme or topic"
+    varchar status "Current status of the request (e.g., PENDING, SEARCHING, PROCESSING, COMPLETED, FAILED) ENUM"
+    jsonb search_criteria "JSON object with search parameters (e.g., max_results, recency_period, document_types) JSONB"
+    timestamptz created_at "Timestamp when the request was created"
+    timestamptz updated_at "Timestamp when the request was last updated"
+  }
+
+  document {
+    uuid id PK "Unique identifier for the document"
+    uuid source_id FK "Foreign key to the source table"
+    text title "Title of the document"
+    text abstract "Abstract or summary of the document"
+    date publication_date "Date the document was published"
+    text url "URL to the document"
+    varchar document_type "Type of document (e.g., ARTICLE, CASE_STUDY, THESIS, REPORT) ENUM"
+    timestamptz created_at "Timestamp when the document record was created"
+    timestamptz updated_at "Timestamp when the document record was last updated"
+  }
+
+  source {
+    uuid id PK "Unique identifier for the source/publisher"
+    text name "Name of the source (e.g., Journal of Science, IEEE Xplore)"
+    text url "URL of the source (optional)"
+    timestamptz created_at "Timestamp when the source record was created"
+    timestamptz updated_at "Timestamp when the source record was last updated"
+  }
+
+  author {
+    uuid id PK "Unique identifier for the author"
+    text name "Name of the author"
+    varchar orcid_id "ORCID identifier for the author (optional)"
+    timestamptz created_at "Timestamp when the author record was created"
+    timestamptz updated_at "Timestamp when the author record was last updated"
+  }
+
+  document_author {
+    uuid document_id PK,FK "Foreign key to the document table"
+    uuid author_id PK,FK "Foreign key to the author table"
+    integer author_order "Order of authorship (e.g., 1 for first author)"
+    timestamptz created_at "Timestamp when the association was created"
+    timestamptz updated_at "Timestamp when the association was last updated"
+  }
+
+  retrieved_document {
+    uuid id PK "Unique identifier for the retrieved document instance"
+    uuid generation_request_id FK "Foreign key to the generation_request table"
+    uuid document_id FK "Foreign key to the document table"
+    numeric relevance_score "Score indicating relevance to the theme"
+    integer retrieval_rank "Rank of the document in the search results (e.g., 1st, 2nd)"
+    timestamptz created_at "Timestamp when the document was retrieved for this request"
+    timestamptz updated_at "Timestamp when the retrieved document record was last updated"
+  }
+
+  knowledge_chunk {
+    uuid id PK "Unique identifier for the knowledge chunk"
+    uuid generation_request_id FK "Foreign key to the generation_request table"
+    uuid document_id FK "Foreign key to the document table"
+    text chunk_content "Extracted piece of information or summary"
+    varchar chunk_type "Type of knowledge chunk (e.g., SUMMARY, KEY_FINDING, METHODOLOGY, REFERENCE) ENUM"
+    integer source_page_number "Page number in the original document (if applicable)"
+    timestamptz created_at "Timestamp when the chunk was extracted"
+    timestamptz updated_at "Timestamp when the chunk was last updated"
+  }
+
+  generated_content {
+    uuid id PK "Unique identifier for the generated content"
+    uuid generation_request_id FK "Foreign key to the generation_request table"
+    varchar content_type "Type of content generated (e.g., TCC, CASE_STUDY, SCIENTIFIC_ARTICLE) ENUM"
+    text title "Title of the generated content"
+    text abstract "Abstract of the generated content"
+    text full_content "The complete generated content"
+    timestamptz generated_at "Timestamp when the content generation was completed"
+    timestamptz created_at "Timestamp when the generated content record was created"
+    timestamptz updated_at "Timestamp when the generated content record was last updated"
+  }

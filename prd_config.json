@@ -1,0 +1,19 @@
+{
+  "idea": "Quero criar um programa para gerar TCC - Trabalho de Conclusão de Curso, Estudo de Caso e Artigos científicos a partir de um tema informado. O programa deve buscar os 10 melhores, principais, artigos, estudo de casos, documentos publicados e que sejam relevantes para o tema. Procurar os documentos mais recentes e montar uma memória sobre o assunto e partir dai gerar um conteúdo autoral, sem viés de IA e em um formato padrão cientifico.",
+  "audience": "Estudantes de graduação e pós-graduação (mestrado, doutorado); Pesquisadores e acadêmicos que buscam agilizar a revisão bibliográfica e a elaboração de rascunhos; Profissionais que necessitam elaborar relatórios, estudos de caso e artigos técnicos com rigor científico e fundamentação robusta.",
+  "features": "Entrada de Tema Central: Interface intuitiva para o usuário especificar o tema ou questão de pesquisa; Busca e Recuperação de Documentos: Algoritmo de busca avançada para identificar os 10 documentos (artigos, estudos de caso, teses, dissertações) mais relevantes, recentes e impactantes de bases de dados científicas (e.g., Scielo, Google Scholar, Web of Science, IEEE Xplore), com filtros personalizáveis; Construção da Base de Conhecimento (Memória): Extração inteligente e sistematizada de informações-chave (conceitos, metodologias, resultados, argumentações, referências) dos documentos recuperados, criando uma 'memória' estruturada do assunto, possivelmente em formato de grafo de conhecimento para interligar ideias e fontes; Geração de Conteúdo Científico Estruturado: Desenvolvimento de rascunhos completos para TCC, Estudo de Caso e Artigos Científicos, com seções padronizadas (introdução, revisão, metodologia, resultados, discussão, conclusão); Formatação Padrão Científica: Aplicação automática de normas de formatação (e.g., ABNT para o Brasil, APA, Vancouver, ISO 690) conforme seleção do usuário; Geração de Conteúdo Autoral e Sem Viés de IA: Sintetização e recontextualização das informações da 'memória' para criar conteúdo original, garantindo a coesão, a fluidez textual e a ausência de plágio direto, focando na construção de argumentos e na apresentação de diferentes perspectivas encontradas nas fontes, sem o padrão repetitivo ou o 'viés' característico de IAs generativas massivas; Citação e Referenciação Automáticas: Inclusão automática e correta de citações no texto e construção da lista de referências bibliográficas, conforme a norma escolhida; Exportação: Opções para exportar o conteúdo gerado em formatos editáveis (DOCX, LaTeX) ou PDF; Painel de Gerenciamento: Área para o usuário acompanhar o processo, revisar documentos encontrados, e gerenciar os trabalhos gerados.",
+  "techStack": {
+    "frontend": "React",
+    "backend": "Python",
+    "database": "Supabase",
+    "infrastructure": "Vercel"
+  },
+  "designSystem": {
+    "tone": "Professional",
+    "style": "Clean & Modern",
+    "imageGenModel": "Gemini 3.0 Pro Image (Google)"
+  },
+  "knowledgeFiles": [],
+  "language": "pt",
+  "aiEditor": "none"
+}
