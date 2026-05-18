@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Loader2, Sparkles, X, CheckCircle, Search, Brain, FileText, ExternalLink, Download, FolderPlus, BookOpen, PlusCircle } from 'lucide-react';
+import { Loader2, X, CheckCircle, Search, Brain, FileText, ExternalLink, Download, FolderPlus, BookOpen, PlusCircle } from 'lucide-react';
 import { getKeyForProvider, getSemanticScholarKey, loadApiKeys } from '../lib/apiKeys';
 import type { ApiKeys } from '../lib/apiKeys';
 import { createProject, saveProject } from '../lib/projectsStorage';
@@ -513,68 +513,111 @@ export function Home() {
   };
 
   return (
-    <div>
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Bem-vindo ao AcademiaGenius</h1>
-        <p className="mt-2 text-sm text-gray-600">
-          Pesquisa acadêmica real com agentes de IA — fontes verificáveis do Semantic Scholar.
+    <div className="max-w-6xl mx-auto px-4 py-8">
+      {/* Elegant Academic Editorial Header */}
+      <div className="text-center mb-12 mt-4">
+        <span className="text-[10px] font-bold text-slate-400 tracking-[0.25em] uppercase block mb-3">Plataforma de Investigação Científica</span>
+        <h1 className="text-4xl font-serif-academic font-bold text-slate-900 leading-tight">AcademiaGenius</h1>
+        <div className="w-16 h-[2px] bg-[#C5A880] mx-auto mt-4 mb-4"></div>
+        <p className="text-base font-serif-academic italic text-slate-600 max-w-2xl mx-auto">
+          Mecanismo autônomo de busca acadêmica integrado ao Semantic Scholar. Redação estruturada segundo normas científicas com fontes auditáveis.
         </p>
       </div>
 
-      <div className="bg-white shadow rounded-lg p-6 border border-gray-200">
-        <h2 className="text-lg font-medium text-gray-900 mb-2">Pipeline de 3 Agentes</h2>
-        <div className="flex items-center gap-6 text-sm text-gray-500 mb-5">
-          <span className="flex items-center gap-1.5"><Search className="w-4 h-4 text-primary" /> Busca real</span>
-          <span className="text-gray-300">→</span>
-          <span className="flex items-center gap-1.5"><Brain className="w-4 h-4 text-primary" /> Extração</span>
-          <span className="text-gray-300">→</span>
-          <span className="flex items-center gap-1.5"><FileText className="w-4 h-4 text-primary" /> Redação</span>
+      {/* Main Scholarly Desk Landing Card */}
+      {!result && !loading && (
+        <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-8 max-w-3xl mx-auto relative overflow-hidden bg-grid">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-[#C5A880]/5 rounded-bl-full pointer-events-none"></div>
+          <h2 className="text-xs font-semibold tracking-wider text-slate-400 uppercase mb-4 flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            Ambiente de Trabalho Científico
+          </h2>
+          <h3 className="text-2xl font-serif-academic text-slate-800 font-bold mb-3">
+            Pesquisa de Fontes e Redação Autônoma
+          </h3>
+          <p className="text-sm text-slate-500 leading-relaxed mb-6">
+            O pipeline orquestra três agentes de IA para pesquisar bases científicas, qualificar as melhores fontes bibliográficas e redigir revisões bibliográficas rigorosas e estruturadas em formato acadêmico.
+          </p>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8 border-t border-b border-slate-100 py-6">
+            <div className="flex items-start gap-3">
+              <div className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center shrink-0 border border-slate-200">
+                <Search className="w-4 h-4 text-slate-700" />
+              </div>
+              <div>
+                <p className="text-xs font-bold text-slate-800">1. Busca Bibliográfica</p>
+                <p className="text-[11px] text-slate-500">Varredura no Semantic Scholar & PubMed</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <div className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center shrink-0 border border-slate-200">
+                <Brain className="w-4 h-4 text-slate-700" />
+              </div>
+              <div>
+                <p className="text-xs font-bold text-slate-800">2. Extração Semântica</p>
+                <p className="text-[11px] text-slate-500">Filtro de papers por relevância e rigor</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <div className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center shrink-0 border border-slate-200">
+                <FileText className="w-4 h-4 text-slate-700" />
+              </div>
+              <div>
+                <p className="text-xs font-bold text-slate-800">3. Redação Acadêmica</p>
+                <p className="text-[11px] text-slate-500">Revisão bibliográfica com citações reais</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <span className="text-xs text-slate-400 font-serif-academic italic">Sem custos adicionais. Chave grátis ativada no servidor.</span>
+            <button
+              onClick={handleOpenModal}
+              className="bg-slate-900 text-white px-6 py-3 rounded-xl font-medium hover:bg-slate-800 transition-all flex items-center gap-2 shadow-sm font-sans active:scale-[0.98]"
+            >
+              <BookOpen className="w-4 h-4 text-[#C5A880]" />
+              Iniciar Nova Investigação
+            </button>
+          </div>
         </div>
-        <button
-          onClick={handleOpenModal}
-          className="bg-primary text-white px-5 py-2.5 rounded-md font-medium hover:bg-opacity-90 transition flex items-center gap-2 shadow-sm"
-        >
-          <Sparkles className="w-4 h-4" />
-          Iniciar Nova Pesquisa
-        </button>
-      </div>
+      )}
 
       {/* Progresso dos Agentes */}
       {loading && (
         <div className="mt-8 grid grid-cols-1 lg:grid-cols-5 gap-6">
           {/* Status dos Agentes */}
-          <div className="lg:col-span-2 bg-white border border-gray-200 rounded-lg shadow-sm p-6 flex flex-col justify-between">
+          <div className="lg:col-span-2 bg-white border border-slate-200 rounded-xl shadow-sm p-6 flex flex-col justify-between">
             <div>
-              <h3 className="text-base font-semibold text-gray-800 mb-5 flex items-center gap-2">
-                <Brain className="w-5 h-5 text-indigo-600" />
-                Pipeline Científico
+              <h3 className="text-sm font-bold tracking-wider text-slate-800 mb-5 flex items-center gap-2 font-serif-academic uppercase">
+                <Brain className="w-4 h-4 text-[#C5A880]" />
+                Investigação Ativa
               </h3>
               <div className="space-y-4">
                 {STEPS.map((step, i) => {
                   const status = stepStatuses[i];
                   const Icon = step.icon;
                   return (
-                    <div key={step.id} className={`flex items-center gap-4 p-3 rounded-lg transition-all ${
-                      status === 'running' ? 'bg-indigo-50 border border-indigo-200 shadow-sm' :
-                      status === 'done' ? 'bg-green-50 border border-green-200' :
-                      'bg-gray-50 border border-gray-100'
+                    <div key={step.id} className={`flex items-center gap-4 p-3.5 rounded-xl transition-all border ${
+                      status === 'running' ? 'bg-[#FCFAF7] border-[#C5A880]/50 shadow-sm' :
+                      status === 'done' ? 'bg-slate-50/50 border-slate-200' :
+                      'bg-gray-50/30 border-gray-100'
                     }`}>
                       <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
                         status === 'done' ? 'bg-green-100 animate-pulse' :
-                        status === 'running' ? 'bg-indigo-100 animate-spin animate-none' : 'bg-gray-100'
+                        status === 'running' ? 'bg-slate-100 animate-spin animate-none' : 'bg-gray-100'
                       }`} style={{ animation: status === 'running' ? 'spin 3s linear infinite' : undefined }}>
                         {status === 'done' ? (
                           <CheckCircle className="w-5 h-5 text-green-600" />
                         ) : status === 'running' ? (
-                          <Loader2 className="w-5 h-5 text-primary animate-spin" />
+                          <Loader2 className="w-5 h-5 text-slate-800 animate-spin" />
                         ) : (
-                          <Icon className="w-5 h-5 text-gray-400" />
+                          <Icon className="w-5 h-5 text-slate-400" />
                         )}
                       </div>
                       <div>
-                        <p className={`text-sm font-medium ${
-                          status === 'running' ? 'text-indigo-800 font-semibold' :
-                          status === 'done' ? 'text-green-800 font-semibold' : 'text-gray-500'
+                        <p className={`text-xs font-bold ${
+                          status === 'running' ? 'text-slate-900' :
+                          status === 'done' ? 'text-slate-800' : 'text-slate-400'
                         }`}>
                           Agente {step.id}: {status === 'done' ? `✓ ${step.done}` : step.label}
                         </p>
@@ -584,33 +627,33 @@ export function Home() {
                 })}
               </div>
             </div>
-            <div className="mt-6 pt-4 border-t border-gray-100 text-xs text-gray-400 text-center leading-relaxed">
-              O pipeline utiliza agentes autônomos para traduzir, buscar, filtrar e redigir seu artigo. Por favor, aguarde alguns instantes.
+            <div className="mt-6 pt-4 border-t border-slate-100 text-xs text-slate-400 text-center leading-relaxed font-serif-academic italic">
+              O pipeline científico orquestra agentes de busca, extração e redação em tempo real.
             </div>
           </div>
 
           {/* Console de Logs */}
-          <div className="lg:col-span-3 bg-gray-950 border border-gray-800 rounded-lg shadow-xl overflow-hidden flex flex-col h-[320px]">
+          <div className="lg:col-span-3 bg-slate-950 border border-slate-850 rounded-xl shadow-xl overflow-hidden flex flex-col h-[340px]">
             {/* Header do Terminal */}
-            <div className="bg-gray-900 px-4 py-2.5 border-b border-gray-800 flex items-center justify-between shrink-0 select-none">
+            <div className="bg-slate-900/80 px-4 py-3 border-b border-slate-900 flex items-center justify-between shrink-0 select-none">
               <div className="flex items-center gap-1.5">
-                <span className="w-3 h-3 rounded-full bg-red-500 block"></span>
-                <span className="w-3 h-3 rounded-full bg-yellow-500 block"></span>
-                <span className="w-3 h-3 rounded-full bg-green-500 block"></span>
+                <span className="w-2.5 h-2.5 rounded-full bg-slate-800 block"></span>
+                <span className="w-2.5 h-2.5 rounded-full bg-slate-800 block"></span>
+                <span className="w-2.5 h-2.5 rounded-full bg-slate-800 block"></span>
               </div>
-              <span className="text-xs font-mono font-bold text-gray-500 flex items-center gap-1.5">
+              <span className="text-xs font-mono font-bold text-slate-400 flex items-center gap-1.5">
                 <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-ping"></span>
-                AGENTE_LOGGER@ACADEMIAGENIUS
+                AUDITORIA_CIENTIFICA_LOG
               </span>
-              <span className="text-[10px] font-mono text-gray-600 bg-gray-950 px-2 py-0.5 rounded border border-gray-800">
-                bash
+              <span className="text-[10px] font-mono text-slate-500 bg-slate-950 px-2 py-0.5 rounded border border-slate-800">
+                system
               </span>
             </div>
 
             {/* Corpo do Terminal */}
-            <div className="p-4 flex-1 overflow-y-auto font-mono text-[11px] leading-relaxed text-emerald-400 space-y-1.5 bg-gray-950">
+            <div className="p-4 flex-1 overflow-y-auto font-mono text-[11px] leading-relaxed text-slate-300 space-y-1.5 bg-slate-950/90">
               {terminalLogs.map((log, idx) => (
-                <div key={idx} className="whitespace-pre-wrap select-all hover:bg-gray-900 hover:bg-opacity-50 px-1 rounded transition-colors">
+                <div key={idx} className="whitespace-pre-wrap select-all hover:bg-slate-900/50 px-1 rounded transition-colors">
                   {log}
                 </div>
               ))}
@@ -622,10 +665,10 @@ export function Home() {
 
       {/* Erro */}
       {error && (
-        <div className="mt-8 bg-red-50 border border-red-200 rounded-lg p-5 flex items-start gap-3">
+        <div className="mt-8 bg-red-50 border border-red-200 rounded-xl p-5 flex items-start gap-3 max-w-3xl mx-auto">
           <X className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
           <div>
-            <h3 className="text-sm font-semibold text-red-800">Erro no Pipeline</h3>
+            <h3 className="text-sm font-semibold text-red-800">Erro no Pipeline Científico</h3>
             <p className="text-sm text-red-700 mt-1">{error}</p>
           </div>
         </div>
@@ -633,38 +676,50 @@ export function Home() {
 
       {/* Resultado */}
       {result && (
-        <div className="mt-8 space-y-6">
+        <div className="mt-8 space-y-8">
           {/* Stats */}
-          <div className="grid grid-cols-3 gap-4">
-            <div className="bg-white border border-gray-200 rounded-lg p-4 text-center">
-              <p className="text-2xl font-bold text-primary">{result.stats.total_papers}</p>
-              <p className="text-xs text-gray-500 mt-1">Artigos Reais Analisados</p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
+            <div className="bg-white border border-slate-200 rounded-xl p-5 text-center shadow-sm relative overflow-hidden">
+              <div className="absolute top-0 inset-x-0 h-1 bg-[#C5A880]"></div>
+              <p className="text-3xl font-serif-academic font-bold text-slate-900">{result.stats.total_papers}</p>
+              <p className="text-xs font-semibold uppercase tracking-wider text-slate-400 mt-2">Artigos Científicos Analisados</p>
             </div>
-            <div className="bg-white border border-gray-200 rounded-lg p-4 text-center">
-              <p className="text-2xl font-bold text-accent">{result.stats.total_citations.toLocaleString()}</p>
-              <p className="text-xs text-gray-500 mt-1">Citações Acumuladas</p>
+            <div className="bg-white border border-slate-200 rounded-xl p-5 text-center shadow-sm relative overflow-hidden">
+              <div className="absolute top-0 inset-x-0 h-1 bg-slate-800"></div>
+              <p className="text-3xl font-serif-academic font-bold text-slate-900">{result.stats.total_citations.toLocaleString()}</p>
+              <p className="text-xs font-semibold uppercase tracking-wider text-slate-400 mt-2">Citações Totais Consolidadas</p>
             </div>
-            <div className="bg-white border border-gray-200 rounded-lg p-4 text-center">
-              <p className="text-2xl font-bold text-gray-700">{result.stats.norm}</p>
-              <p className="text-xs text-gray-500 mt-1">Norma Aplicada</p>
+            <div className="bg-white border border-slate-200 rounded-xl p-5 text-center shadow-sm relative overflow-hidden">
+              <div className="absolute top-0 inset-x-0 h-1 bg-slate-900"></div>
+              <p className="text-3xl font-serif-academic font-bold text-slate-750">{result.stats.norm}</p>
+              <p className="text-xs font-semibold uppercase tracking-wider text-slate-400 mt-2">Metodologia / Norma Aplicada</p>
             </div>
           </div>
 
           {/* Fontes Reais */}
-          <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
-            <div className="px-5 py-3 bg-gray-50 border-b border-gray-200">
-              <h3 className="text-sm font-semibold text-gray-700">📚 Fontes Científicas Utilizadas</h3>
+          <div className="bg-[#FAF9F5] border border-slate-200 rounded-xl shadow-sm overflow-hidden max-w-4xl mx-auto">
+            <div className="px-6 py-4 bg-white border-b border-slate-100 flex items-center justify-between">
+              <h3 className="text-xs font-bold tracking-wider text-slate-400 uppercase flex items-center gap-2">
+                <BookOpen className="w-3.5 h-3.5 text-[#C5A880]" />
+                Bibliografia & Referências Utilizadas
+              </h3>
+              <span className="text-xs text-slate-400 italic">Semantic Scholar & PubMed catalogados</span>
             </div>
-            <ul className="divide-y divide-gray-100">
+            <ul className="divide-y divide-slate-100 bg-white">
               {result.papers.map((paper, i) => (
-                <li key={i} className="px-5 py-3 flex items-start justify-between gap-4 hover:bg-gray-50">
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium text-gray-800 truncate">{paper.title}</p>
-                    <p className="text-xs text-gray-500 mt-0.5">{paper.authors} · {paper.year} · {paper.citation_count} citações</p>
+                <li key={i} className="px-6 py-4 flex items-start justify-between gap-4 hover:bg-slate-50/50 transition">
+                  <div className="min-w-0 flex gap-4">
+                    <span className="font-serif-academic font-bold text-[#C5A880] text-sm shrink-0">[{i + 1}]</span>
+                    <div>
+                      <p className="text-sm font-serif-academic font-bold text-slate-800 leading-snug">{paper.title}</p>
+                      <p className="text-xs text-slate-500 mt-1">
+                        <span className="italic font-serif-academic text-slate-600">{paper.authors}</span> · {paper.year} · <span className="font-mono text-[10px] bg-slate-50 border border-slate-200/60 px-1.5 py-0.5 rounded text-slate-500">{paper.citation_count} citações</span>
+                      </p>
+                    </div>
                   </div>
                   {paper.url && (
                     <a href={paper.url} target="_blank" rel="noopener noreferrer"
-                      className="text-primary hover:text-indigo-700 shrink-0 mt-0.5">
+                      className="text-slate-400 hover:text-slate-800 shrink-0 p-1 hover:bg-slate-100 rounded transition-colors">
                       <ExternalLink className="w-4 h-4" />
                     </a>
                   )}
@@ -674,75 +729,88 @@ export function Home() {
           </div>
 
           {/* Documento Gerado */}
-          <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
-            <div className="bg-gradient-to-r from-primary to-accent px-6 py-4 flex items-center justify-between">
-              <h3 className="text-white font-semibold">Documento Gerado com Fontes Reais</h3>
-              <span className="bg-white bg-opacity-20 text-white text-xs px-3 py-1 rounded-full">{selectedLLM.label}</span>
+          <div className="academic-paper rounded-xl overflow-hidden max-w-4xl mx-auto">
+            <div className="px-8 py-5 bg-white border-b border-slate-200/60 flex items-center justify-between">
+              <div>
+                <h3 className="text-xs font-bold tracking-wider text-slate-400 uppercase">Artigo Científico Produzido</h3>
+                <p className="text-xs text-slate-500 mt-0.5">Norma: {form.norm} · Processado por {selectedLLM.label}</p>
+              </div>
+              <span className="bg-slate-50 border border-slate-200 text-slate-600 text-xs px-3 py-1 rounded-full font-serif-academic italic">
+                Citações Indexadas
+              </span>
             </div>
-            <div className="p-6">
-              <div className="whitespace-pre-wrap text-sm text-gray-800 leading-relaxed font-sans">
-                {renderInteractiveDocument(result.document, result.papers)}
+            <div className="p-10 bg-white">
+              {/* LaTeX-like paper display */}
+              <div className="max-w-2xl mx-auto">
+                <div className="whitespace-pre-wrap text-[15px] text-slate-800 leading-relaxed font-serif-academic space-y-4">
+                  {renderInteractiveDocument(result.document, result.papers)}
+                </div>
               </div>
             </div>
-            <div className="p-6 border-t border-gray-200 bg-indigo-50/30">
-              <label className="block text-sm font-semibold text-gray-800 mb-2">
-                Melhorar ou Refinar Documento
+
+            {/* Refinamento Acadêmico */}
+            <div className="p-8 border-t border-slate-200/60 bg-[#FAF9F5]/40">
+              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2.5">
+                Refinar e Expandir Argumentação Científica
               </label>
-              <div className="flex gap-3">
+              <div className="flex flex-col md:flex-row gap-4">
                 <div className="flex-1 flex flex-col gap-3">
                   <textarea
-                    className="w-full border border-gray-300 rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary min-h-[80px]"
-                    placeholder="Ex: Amplie a seção de metodologia, adicione mais detalhes sobre o software PLAXIS 2D, e reescreva a conclusão focando em engenharia civil..."
+                    className="w-full border border-slate-200 rounded-xl p-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-slate-800 min-h-[90px] bg-white placeholder-slate-400"
+                    placeholder="Ex: Expanda a análise estrutural da contenção mista e adicione mais dados sobre a deformação das estacas..."
                     value={refinement}
                     onChange={e => setRefinement(e.target.value)}
                   />
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-700 mb-1">Anexar Documento Base (Opcional)</label>
-                    <input type="file" multiple accept=".pdf,.doc,.docx,.txt,.md,.csv"
-                      className="block w-full text-xs text-gray-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
-                      onChange={(e) => {
-                        if (e.target.files) {
-                          setRefinementFiles(Array.from(e.target.files));
-                        }
-                      }} />
-                    {refinementFiles.length > 0 && (
-                      <p className="text-xs text-indigo-600 mt-1">{refinementFiles.length} arquivo(s) anexado(s) para refinamento.</p>
-                    )}
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Contexto Adicional (PDF, DOC, TXT) - Opcional</label>
+                      <input type="file" multiple accept=".pdf,.doc,.docx,.txt,.md,.csv"
+                        className="block w-full text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:font-semibold file:bg-slate-100 file:text-slate-800 hover:file:bg-slate-200 cursor-pointer"
+                        onChange={(e) => {
+                          if (e.target.files) {
+                            setRefinementFiles(Array.from(e.target.files));
+                          }
+                        }} />
+                      {refinementFiles.length > 0 && (
+                        <p className="text-xs text-slate-600 mt-1 font-serif-academic italic">✓ {refinementFiles.length} arquivo(s) anexado(s) para refinamento.</p>
+                      )}
+                    </div>
                   </div>
                 </div>
                 <button onClick={handleResearch} disabled={loading}
-                  className="bg-primary text-white px-6 py-2 rounded-lg hover:bg-opacity-90 transition font-medium flex flex-col items-center justify-center gap-1 min-w-[140px] disabled:opacity-60">
-                  {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <PlusCircle className="w-5 h-5" />}
-                  <span>Aplicar<br/>Refinamento</span>
+                  className="bg-slate-900 text-white px-6 py-4 rounded-xl hover:bg-slate-800 transition-all font-medium flex flex-col items-center justify-center gap-1.5 min-w-[150px] disabled:opacity-60 active:scale-[0.98]">
+                  {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <PlusCircle className="w-5 h-5 text-[#C5A880]" />}
+                  <span className="text-xs font-bold tracking-wider uppercase">Aplicar Ajustes</span>
                 </button>
               </div>
             </div>
 
-            <div className="border-t px-6 py-4 bg-gray-50 flex gap-3 flex-wrap items-center">
+            {/* Ações de Documento */}
+            <div className="border-t border-slate-200/60 px-8 py-5 bg-slate-50/50 flex gap-3 flex-wrap items-center">
               <button onClick={() => navigator.clipboard.writeText(result.document)}
-                className="text-sm border border-gray-300 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-100 transition">
-                Copiar
+                className="text-xs font-bold tracking-wider uppercase border border-slate-200 text-slate-700 px-5 py-2.5 rounded-xl hover:bg-slate-100 transition active:scale-[0.98] bg-white">
+                Copiar Texto
               </button>
               <button onClick={handleDownloadDocx}
-                className="text-sm bg-accent text-white px-4 py-2 rounded-md hover:bg-opacity-90 transition flex items-center gap-1.5">
-                <Download className="w-4 h-4" />
+                className="text-xs font-bold tracking-wider uppercase bg-slate-900 text-white px-5 py-2.5 rounded-xl hover:bg-slate-800 transition flex items-center gap-1.5 active:scale-[0.98]">
+                <Download className="w-4 h-4 text-[#C5A880]" />
                 Baixar DOCX
               </button>
               <button onClick={handleSaveProject}
-                className="text-sm border border-indigo-300 text-indigo-700 px-4 py-2 rounded-md hover:bg-indigo-50 transition flex items-center gap-1.5">
-                <FolderPlus className="w-4 h-4" />
-                {projectSaved ? 'Salvo com sucesso!' : 'Salvar Versão'}
+                className="text-xs font-bold tracking-wider uppercase border border-slate-200 text-slate-700 px-5 py-2.5 rounded-xl hover:bg-slate-100 transition flex items-center gap-1.5 bg-white active:scale-[0.98]">
+                <FolderPlus className="w-4 h-4 text-slate-500" />
+                {projectSaved ? 'Versão Salva ✓' : 'Salvar Versão'}
               </button>
               
-              <div className="ml-auto flex gap-2">
+              <div className="ml-auto flex gap-3">
                 <button onClick={openNotebookAI}
-                  className="text-sm bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 transition shadow-sm flex items-center gap-1.5 font-medium">
+                  className="text-xs font-bold tracking-wider uppercase bg-[#C5A880] text-white px-5 py-2.5 rounded-xl hover:bg-[#B48E50] transition shadow-sm flex items-center gap-1.5 active:scale-[0.98]">
                   <BookOpen className="w-4 h-4" />
                   Abrir no Notebook AI
                 </button>
                 <button onClick={() => { setResult(null); setProjectSaved(false); setRefinement(''); setSaveCount(0); }}
-                  className="text-sm border border-gray-300 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-100 transition">
-                  Nova Pesquisa
+                  className="text-xs font-bold tracking-wider uppercase border border-slate-200 text-slate-700 px-5 py-2.5 rounded-xl hover:bg-slate-100 transition bg-white active:scale-[0.98]">
+                  Nova Investigação
                 </button>
               </div>
             </div>
@@ -752,88 +820,88 @@ export function Home() {
 
       {/* Modal */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900 bg-opacity-60">
-          <div className="bg-white rounded-xl p-8 max-w-lg w-full shadow-2xl mx-4">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-primary" />
-                {modalStep === 'setup' ? 'Configurar Pesquisa' : 'Refinamento por IA'}
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl p-8 max-w-xl w-full shadow-2xl border border-slate-200/80 mx-4">
+            <div className="flex items-center justify-between mb-6 border-b border-slate-100 pb-4">
+              <h3 className="text-lg font-serif-academic font-bold text-slate-900 flex items-center gap-2">
+                <BookOpen className="w-5 h-5 text-slate-700" />
+                {modalStep === 'setup' ? 'Parâmetros de Investigação' : 'Delimitação de Escopo Científico'}
               </h3>
-              <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600">
+              <button onClick={() => setShowModal(false)} className="text-slate-400 hover:text-slate-600 p-1 hover:bg-slate-50 rounded-full transition-colors">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             {modalStep === 'setup' ? (
-              <form className="space-y-4" onSubmit={handleNextStep}>
+              <form className="space-y-5" onSubmit={handleNextStep}>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Tema Central *</label>
-                  <input type="text" placeholder="Ex: Inteligência Artificial na Educação"
-                    className="block w-full border border-gray-300 rounded-md py-2.5 px-3 focus:outline-none focus:ring-2 focus:ring-primary text-sm"
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Tema Central / Objeto de Estudo *</label>
+                  <input type="text" placeholder="Ex: Análise de tensões em contenções mistas com PLAXIS 2D"
+                    className="block w-full border border-slate-200 rounded-xl py-2.5 px-4 focus:outline-none focus:ring-2 focus:ring-slate-800 text-sm placeholder-slate-400 bg-[#FCFAF7]"
                     value={form.theme} onChange={(e) => setForm({ ...form, theme: e.target.value })} />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Anexar Arquivos (PDF, DOCX, TXT, etc) - Opcional</label>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Anexar Documentos de Base (PDF, DOCX, TXT) - Opcional</label>
                   <input type="file" multiple accept=".pdf,.doc,.docx,.txt,.md,.csv"
-                    className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
+                    className="block w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-slate-100 file:text-slate-800 hover:file:bg-slate-200 cursor-pointer"
                     onChange={(e) => {
                       if (e.target.files) {
                         setAttachedFiles(Array.from(e.target.files));
                       }
                     }} />
                   {attachedFiles.length > 0 && (
-                    <p className="text-xs text-indigo-600 mt-1">{attachedFiles.length} arquivo(s) anexado(s) para expandir a pesquisa.</p>
+                    <p className="text-xs text-slate-600 mt-1.5 font-serif-academic italic">✓ {attachedFiles.length} documento(s) anexado(s) para contextualização.</p>
                   )}
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Tipo de Documento</label>
-                    <select className="block w-full border border-gray-300 rounded-md py-2.5 px-3 bg-white focus:outline-none focus:ring-2 focus:ring-primary text-sm"
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Formato de Saída</label>
+                    <select className="block w-full border border-slate-200 rounded-xl py-2.5 px-3 bg-white focus:outline-none focus:ring-2 focus:ring-slate-800 text-sm bg-[#FCFAF7] text-slate-800"
                       value={form.doc_type} onChange={(e) => setForm({ ...form, doc_type: e.target.value })}>
-                      <option value="tcc">Monografia / TCC</option>
                       <option value="artigo">Artigo Científico</option>
+                      <option value="tcc">Monografia / TCC</option>
                       <option value="estudo">Estudo de Caso</option>
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Norma</label>
-                    <select className="block w-full border border-gray-300 rounded-md py-2.5 px-3 bg-white focus:outline-none focus:ring-2 focus:ring-primary text-sm"
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Normas Metodológicas</label>
+                    <select className="block w-full border border-slate-200 rounded-xl py-2.5 px-3 bg-white focus:outline-none focus:ring-2 focus:ring-slate-800 text-sm bg-[#FCFAF7] text-slate-800"
                       value={form.norm} onChange={(e) => setForm({ ...form, norm: e.target.value })}>
-                      <option value="ABNT">ABNT</option>
-                      <option value="APA">APA</option>
+                      <option value="ABNT">ABNT (Brasil)</option>
+                      <option value="APA">APA Style</option>
                       <option value="Vancouver">Vancouver</option>
                     </select>
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Inteligência Artificial (Redação Final)</label>
-                  <select className="block w-full border border-gray-300 rounded-md py-2.5 px-3 bg-white focus:outline-none focus:ring-2 focus:ring-primary text-sm"
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Mecanismo de Redação (LLM)</label>
+                  <select className="block w-full border border-slate-200 rounded-xl py-2.5 px-3 bg-white focus:outline-none focus:ring-2 focus:ring-slate-800 text-sm bg-[#FCFAF7] text-slate-800"
                     value={form.llm} onChange={(e) => handleLlmChange(e.target.value)}>
                     {LLM_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-                    <option value="custom">⚙️ Outro modelo (Digitar manualmente)</option>
+                    <option value="custom">⚙️ Especificar outro modelo</option>
                   </select>
                 </div>
                 {form.llm === 'custom' && (
-                  <div className="grid grid-cols-2 gap-3 p-3 bg-indigo-50 border border-indigo-100 rounded-md mt-1">
+                  <div className="grid grid-cols-2 gap-3 p-4 bg-slate-50 border border-slate-200 rounded-xl mt-1">
                     <div>
-                      <label className="block text-xs font-semibold text-indigo-900 mb-1">ID Exato do Modelo</label>
-                      <input type="text" placeholder="Ex: gpt-5.5-turbo" 
-                        className="block w-full border border-indigo-200 rounded-md py-2 px-3 text-sm focus:ring-primary"
+                      <label className="block text-[10px] font-bold uppercase text-slate-500 mb-1">Identificador do Modelo</label>
+                      <input type="text" placeholder="Ex: gpt-4o-mini" 
+                        className="block w-full border border-slate-200 rounded-lg py-2 px-3 text-sm focus:ring-slate-800 bg-white"
                         value={form.custom_llm} onChange={e => setForm({...form, custom_llm: e.target.value})} />
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold text-indigo-900 mb-1">Provedor da API</label>
-                      <select className="block w-full border border-indigo-200 rounded-md py-2 px-3 text-sm focus:ring-primary bg-white"
+                      <label className="block text-[10px] font-bold uppercase text-slate-500 mb-1">Provedor</label>
+                      <select className="block w-full border border-slate-200 rounded-lg py-2 px-3 text-sm focus:ring-slate-800 bg-white text-slate-800"
                         value={form.custom_provider} onChange={e => {
                           const p = e.target.value;
                           setForm({...form, custom_provider: p, api_key: getKeyForProvider(p as any)});
                         }}>
                         <option value="openai">OpenAI</option>
-                        <option value="anthropic">Anthropic (Claude)</option>
-                        <option value="gemini">Google (Gemini)</option>
+                        <option value="anthropic">Anthropic</option>
+                        <option value="gemini">Google Gemini</option>
                         <option value="groq">Groq</option>
                         <option value="mistral">Mistral</option>
                       </select>
@@ -842,62 +910,62 @@ export function Home() {
                 )}
 
                 <div>
-                  <div className="flex justify-between items-center mb-1">
-                    <label className="block text-sm font-medium text-gray-700">API Key — {selectedLLM.label}</label>
+                  <div className="flex justify-between items-center mb-1.5">
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">Credencial da API — {selectedLLM.label}</label>
                     {serverKeys[((form.llm === 'custom' ? form.custom_provider : selectedLLM.provider) as string).toLowerCase()] && (
-                      <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded font-semibold border border-emerald-200 animate-pulse">
-                        ✓ Chave Grátis Ativa no Servidor
+                      <span className="text-[10px] bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full font-bold border border-emerald-200 animate-pulse">
+                        ✓ Chave Integrada Ativa no Servidor
                       </span>
                     )}
                   </div>
                   <input type="password" 
                     placeholder={
                       serverKeys[((form.llm === 'custom' ? form.custom_provider : selectedLLM.provider) as string).toLowerCase()]
-                        ? "[Opcional] Chave ativa no servidor. Deixe em branco para usar grátis."
+                        ? "Usando chave pré-configurada no servidor (Grátis)"
                         : selectedLLM.keyHint
                     }
-                    className="block w-full border border-gray-300 rounded-md py-2.5 px-3 focus:outline-none focus:ring-2 focus:ring-primary text-sm font-mono"
+                    className="block w-full border border-slate-200 rounded-xl py-2.5 px-4 focus:outline-none focus:ring-2 focus:ring-slate-800 text-sm font-mono bg-[#FCFAF7]"
                     value={form.api_key} onChange={(e) => setForm({ ...form, api_key: e.target.value })} />
-                  <p className="text-xs text-gray-400 mt-1">
+                  <p className="text-[10px] text-slate-400 mt-1 font-serif-academic italic">
                     {serverKeys[((form.llm === 'custom' ? form.custom_provider : selectedLLM.provider) as string).toLowerCase()]
-                      ? "Chave integrada detectada! Deixe em branco para rodar gratuitamente."
-                      : "Sua chave nunca sai do seu computador."}
+                      ? "Processamento gratuito via chaves integradas de forma segura."
+                      : "Sua credencial de API é salva estritamente local no seu navegador."}
                   </p>
                 </div>
 
                 {getKeyForProvider('groq' as any) && selectedLLM.provider !== 'groq' && (
-                  <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3">
-                    <label className="flex items-start gap-2 cursor-pointer">
+                  <div className="bg-emerald-50/50 border border-emerald-200 rounded-xl p-4">
+                    <label className="flex items-start gap-3 cursor-pointer">
                       <input type="checkbox" className="mt-1 w-4 h-4 text-emerald-600 rounded border-emerald-300 focus:ring-emerald-500"
                         checked={form.usePipeline} onChange={(e) => setForm({ ...form, usePipeline: e.target.checked })} />
                       <div>
-                        <span className="text-sm font-semibold text-emerald-900 block">Ativar Modo Pipeline ⚡</span>
-                        <span className="text-xs text-emerald-700 leading-tight block mt-0.5">
-                          Usa Groq (ultrarrápido) para extração de dados e {selectedLLM.label || selectedLLM.provider} para a redação final. <strong>Recomendado!</strong>
+                        <span className="text-xs font-bold text-emerald-950 block">Ativar Pré-Processamento Científico ⚡</span>
+                        <span className="text-[11px] text-emerald-700 leading-snug block mt-0.5">
+                          Usa a tecnologia Groq de ultra-baixa latência para extração bibliográfica e reserva o {selectedLLM.label} para a redação acadêmica final.
                         </span>
                       </div>
                     </label>
                   </div>
                 )}
 
-                {error && <p className="text-sm text-red-600">{error}</p>}
+                {error && <p className="text-xs font-semibold text-red-600">{error}</p>}
 
-                <div className="pt-2 flex justify-end gap-3">
+                <div className="pt-3 border-t border-slate-100 flex justify-end gap-3">
                   <button type="button" onClick={() => setShowModal(false)}
-                    className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 text-sm">
+                    className="px-4 py-2.5 border border-slate-200 rounded-xl text-slate-600 hover:bg-slate-50 text-sm font-medium transition active:scale-[0.98]">
                     Cancelar
                   </button>
                   <button type="submit" disabled={clarifyLoading}
-                    className="bg-primary text-white px-6 py-2 rounded-md hover:bg-opacity-90 text-sm font-medium flex items-center gap-2 disabled:opacity-50">
+                    className="bg-slate-900 text-white px-6 py-2.5 rounded-xl hover:bg-slate-800 text-sm font-semibold flex items-center gap-2 disabled:opacity-50 transition active:scale-[0.98]">
                     {clarifyLoading ? (
                       <>
                         <Loader2 className="w-4 h-4 animate-spin" />
-                        Analisando Tema...
+                        Qualificando Objeto...
                       </>
                     ) : (
                       <>
-                        <Sparkles className="w-4 h-4" />
-                        Avançar
+                        <span>Avançar para Filtros</span>
+                        <span>→</span>
                       </>
                     )}
                   </button>
@@ -905,20 +973,20 @@ export function Home() {
               </form>
             ) : (
               <div className="space-y-6">
-                <div className="bg-indigo-50 rounded-lg p-4 border border-indigo-100">
-                  <p className="text-xs text-indigo-800 leading-relaxed">
-                    💡 <strong>Copiloto Científico de IA:</strong> Responda a estas rápidas perguntas para refinar os critérios de busca e eliminar resultados fora do contexto pretendido.
+                <div className="bg-slate-50 rounded-xl p-4.5 border border-slate-200/60">
+                  <p className="text-xs text-slate-600 leading-relaxed font-serif-academic italic">
+                    💡 <strong>Delimitação de Objeto Acadêmico:</strong> Responda às perguntas formuladas pelos agentes para otimizar os filtros de exclusão e precisão bibliográfica.
                   </p>
                 </div>
 
                 <div className="space-y-5 max-h-[350px] overflow-y-auto pr-1">
                   {clarifyingQuestions.map((q) => (
                     <div key={q.id} className="space-y-2">
-                      <label className="block text-sm font-semibold text-gray-800 leading-snug">
+                      <label className="block text-sm font-serif-academic font-bold text-slate-800 leading-snug">
                         {q.question}
                       </label>
                       {q.type === 'choice' && q.options ? (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-1">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-1.5">
                           {q.options.map((opt) => {
                             const isSelected = clarificationsAnswers[q.question] === opt;
                             return (
@@ -929,10 +997,10 @@ export function Home() {
                                   ...clarificationsAnswers,
                                   [q.question]: opt
                                 })}
-                                className={`text-left p-3 rounded-lg border text-sm font-medium transition-all ${
+                                className={`text-left p-3.5 rounded-xl border text-xs font-bold leading-normal transition-all duration-200 ${
                                   isSelected
-                                    ? 'bg-indigo-600 border-indigo-600 text-white shadow-md scale-[1.02]'
-                                    : 'bg-white border-gray-200 text-gray-700 hover:bg-indigo-50 hover:border-indigo-200'
+                                    ? 'bg-slate-900 border-slate-900 text-white shadow-md scale-[1.01]'
+                                    : 'bg-[#FCFAF7] border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-300'
                                 }`}
                               >
                                 {opt}
@@ -942,31 +1010,31 @@ export function Home() {
                         </div>
                       ) : (
                         <input
-                          type="text"
-                          placeholder="Digite para detalhar (opcional)..."
-                          className="block w-full border border-gray-300 rounded-md py-2.5 px-3 focus:outline-none focus:ring-2 focus:ring-primary text-sm bg-white text-gray-800 placeholder-gray-400"
-                          value={clarificationsAnswers[q.question] || ''}
-                          onChange={(e) => setClarificationsAnswers({
-                            ...clarificationsAnswers,
-                            [q.question]: e.target.value
-                          })}
+                           type="text"
+                           placeholder="Responda para melhor detalhar..."
+                           className="block w-full border border-slate-200 rounded-xl py-2.5 px-4 focus:outline-none focus:ring-2 focus:ring-slate-800 text-sm bg-[#FCFAF7] text-slate-800 placeholder-slate-400 transition"
+                           value={clarificationsAnswers[q.question] || ''}
+                           onChange={(e) => setClarificationsAnswers({
+                             ...clarificationsAnswers,
+                             [q.question]: e.target.value
+                           })}
                         />
                       )}
                     </div>
                   ))}
                 </div>
 
-                {error && <p className="text-sm text-red-600">{error}</p>}
+                {error && <p className="text-xs font-semibold text-red-600">{error}</p>}
 
-                <div className="pt-4 flex justify-between gap-3 border-t border-gray-100">
+                <div className="pt-4 flex justify-between gap-3 border-t border-slate-100">
                   <button type="button" onClick={() => setModalStep('setup')}
-                    className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 text-sm font-medium transition">
+                    className="px-4 py-2.5 border border-slate-200 rounded-xl text-slate-600 hover:bg-slate-50 text-sm font-medium transition active:scale-[0.98]">
                     Voltar
                   </button>
                   <button type="button" onClick={handleResearch}
-                    className="bg-primary text-white px-6 py-2 rounded-md hover:bg-opacity-90 text-sm font-semibold flex items-center gap-2 shadow-md transition">
-                    <Sparkles className="w-4 h-4" />
-                    Iniciar Pesquisa
+                    className="bg-slate-900 text-white px-6 py-2.5 rounded-xl hover:bg-slate-800 text-sm font-bold flex items-center gap-2 shadow-sm transition active:scale-[0.98]">
+                    <Search className="w-4 h-4" />
+                    Iniciar Investigação
                   </button>
                 </div>
               </div>

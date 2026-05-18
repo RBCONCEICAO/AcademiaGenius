@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,49 +6,58 @@
 
 @layer base {
   :root {
-    --primary:       79 70 229;
-    --primary-light: 99 102 241;
+    --primary:       15 23 42;      /* Slate 900 for serious academic tone */
+    --primary-light: 71 85 105;     /* Slate 600 */
+    --academic-gold: 180 142 80;    /* Premium scholarly gold */
   }
 
   html { font-family: 'Inter', system-ui, sans-serif; }
 
-
   body {
-    @apply antialiased text-gray-800 bg-gray-50;
+    @apply antialiased text-slate-800 bg-[#FAF9F5]; /* Warm book-like bone/cream background */
     font-feature-settings: 'cv11', 'ss01';
   }
 
   ::-webkit-scrollbar { @apply w-1.5 h-1.5; }
   ::-webkit-scrollbar-track { @apply bg-transparent; }
-  ::-webkit-scrollbar-thumb { @apply bg-gray-300 rounded-full; }
-  ::-webkit-scrollbar-thumb:hover { @apply bg-gray-400; }
+  ::-webkit-scrollbar-thumb { @apply bg-slate-300 rounded-full; }
+  ::-webkit-scrollbar-thumb:hover { @apply bg-slate-400; }
 }
 
 @layer components {
   .btn-primary {
-    @apply bg-indigo-600 text-white font-semibold px-5 py-2.5 rounded-xl hover:bg-indigo-700 active:scale-[0.98] transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2;
+    @apply bg-slate-900 text-white font-semibold px-5 py-2.5 rounded-xl hover:bg-slate-800 active:scale-[0.98] transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2;
   }
   .btn-secondary {
-    @apply bg-white text-gray-700 font-medium px-4 py-2 rounded-xl border border-gray-200 hover:bg-gray-50 active:scale-[0.98] transition-all shadow-sm flex items-center gap-2;
+    @apply bg-white text-slate-700 font-medium px-4 py-2 rounded-xl border border-slate-200 hover:bg-slate-50 active:scale-[0.98] transition-all shadow-sm flex items-center gap-2;
   }
   .card {
-    @apply bg-white rounded-2xl border border-gray-100 shadow-sm;
+    @apply bg-white rounded-2xl border border-slate-200 shadow-sm;
   }
   .input {
-    @apply w-full border border-gray-200 rounded-xl py-2.5 px-4 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white placeholder-gray-400 transition;
+    @apply w-full border border-slate-200 rounded-xl py-2.5 px-4 text-sm focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-slate-500 bg-white placeholder-slate-400 transition;
   }
   .label {
-    @apply block text-sm font-medium text-gray-700 mb-1.5;
+    @apply block text-sm font-medium text-slate-700 mb-1.5;
   }
   .badge {
     @apply inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full border;
+  }
+  .font-serif-academic {
+    font-family: 'Lora', Georgia, serif;
+  }
+  .academic-paper {
+    font-family: 'Lora', Georgia, serif;
+    background-color: #FCFAF7;
+    border: 1px solid #E7E5DC;
+    box-shadow: 0 10px 30px -10px rgba(71, 85, 105, 0.05);
   }
 }
 
 @layer utilities {
   .text-balance { text-wrap: balance; }
   .bg-grid {
-    background-image: radial-gradient(circle, #e5e7eb 1px, transparent 1px);
+    background-image: radial-gradient(circle, #e2e8f0 1px, transparent 1px);
     background-size: 24px 24px;
   }
 }
