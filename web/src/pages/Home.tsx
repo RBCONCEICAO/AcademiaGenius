@@ -11,14 +11,15 @@ interface LLMOption {
   value: string;
   provider: string;
   keyHint: string;
+  free?: boolean;
 }
 
 const LLM_OPTIONS: LLMOption[] = [
   // --- Google ---
-  { label: 'Gemini 2.5 Pro (Mais Inteligente)', value: 'gemini-2.5-pro', provider: 'gemini', keyHint: 'AIza...' },
-  { label: 'Gemini 2.5 Flash (Mais Rápido)', value: 'gemini-2.5-flash', provider: 'gemini', keyHint: 'AIza...' },
-  { label: 'Gemini 1.5 Pro', value: 'gemini-1.5-pro', provider: 'gemini', keyHint: 'AIza...' },
-  { label: 'Gemini 1.5 Flash', value: 'gemini-1.5-flash', provider: 'gemini', keyHint: 'AIza...' },
+  { label: 'Gemini 2.5 Pro (Mais Inteligente)', value: 'gemini-2.5-pro', provider: 'gemini', keyHint: 'AIza...', free: true },
+  { label: 'Gemini 2.5 Flash (Mais Rápido)', value: 'gemini-2.5-flash', provider: 'gemini', keyHint: 'AIza...', free: true },
+  { label: 'Gemini 1.5 Pro', value: 'gemini-1.5-pro', provider: 'gemini', keyHint: 'AIza...', free: true },
+  { label: 'Gemini 1.5 Flash', value: 'gemini-1.5-flash', provider: 'gemini', keyHint: 'AIza...', free: true },
 
   // --- OpenAI ---
   { label: 'OpenAI GPT-4.5 Preview', value: 'gpt-4.5-preview', provider: 'openai', keyHint: 'sk-...' },
@@ -34,9 +35,9 @@ const LLM_OPTIONS: LLMOption[] = [
   { label: 'Claude 3 Opus', value: 'claude-3-opus-20240229', provider: 'anthropic', keyHint: 'sk-ant-...' },
 
   // --- Groq ---
-  { label: 'Groq (Llama 3.3 70B)', value: 'llama-3.3-70b-versatile', provider: 'groq', keyHint: 'gsk_...' },
-  { label: 'Groq (Mixtral 8x7B)', value: 'mixtral-8x7b-32768', provider: 'groq', keyHint: 'gsk_...' },
-  { label: 'Groq (Gemma 2 9B)', value: 'gemma2-9b-it', provider: 'groq', keyHint: 'gsk_...' },
+  { label: 'Groq (Llama 3.3 70B)', value: 'llama-3.3-70b-versatile', provider: 'groq', keyHint: 'gsk_...', free: true },
+  { label: 'Groq (Mixtral 8x7B)', value: 'mixtral-8x7b-32768', provider: 'groq', keyHint: 'gsk_...', free: true },
+  { label: 'Groq (Gemma 2 9B)', value: 'gemma2-9b-it', provider: 'groq', keyHint: 'gsk_...', free: true },
 
   // --- Mistral ---
   { label: 'Mistral Large', value: 'mistral-large-latest', provider: 'mistral', keyHint: 'api_key...' },
@@ -245,7 +246,7 @@ export function Home() {
     };
   });
 
-  const selectedLLM = LLM_OPTIONS.find(o => o.value === form.llm) || { label: 'Custom', value: form.custom_llm, provider: form.custom_provider, keyHint: 'Chave...' };
+  const selectedLLM = LLM_OPTIONS.find(o => o.value === form.llm) || { label: 'Custom', value: form.custom_llm, provider: form.custom_provider, keyHint: 'Chave...', free: false };
 
   const handleLlmChange = (value: string) => {
     if (value === 'custom') {
@@ -279,10 +280,11 @@ export function Home() {
     
     let currentApiKey = form.api_key.trim();
     const p = (form.llm === 'custom' ? form.custom_provider : selectedLLM.provider) as string;
+    const isFreeModel = selectedLLM && selectedLLM.free;
     
     if (!currentApiKey) {
       currentApiKey = getKeyForProvider(p as any).trim();
-      if (!currentApiKey && !serverKeys[p.toLowerCase()]) {
+      if (!currentApiKey && !serverKeys[p.toLowerCase()] && !isFreeModel) {
         setError('Informe sua API Key da IA escolhida.');
         return;
       }
@@ -324,10 +326,11 @@ export function Home() {
     
     let currentApiKey = form.api_key.trim();
     const p = (form.llm === 'custom' ? form.custom_provider : selectedLLM.provider) as string;
+    const isFreeModel = selectedLLM && selectedLLM.free;
     
     if (!currentApiKey) {
       currentApiKey = getKeyForProvider(p as any).trim();
-      if (!currentApiKey && !serverKeys[p.toLowerCase()]) {
+      if (!currentApiKey && !serverKeys[p.toLowerCase()] && !isFreeModel) {
         setError('Informe sua API Key da IA escolhida.');
         return;
       }

@@ -1,4 +1,24 @@
 import os
+
+# --- Zero-Dependency Local .env Loader ---
+def _load_env_from_file():
+    for path in [".env", "../.env", "../../.env"]:
+        if os.path.exists(path):
+            try:
+                with open(path, "r", encoding="utf-8") as f:
+                    for line in f:
+                        line = line.strip()
+                        if line and not line.startswith("#") and "=" in line:
+                            k, v = line.split("=", 1)
+                            k = k.strip()
+                            v = v.strip().strip('"').strip("'")
+                            if k and v and k not in os.environ:
+                                os.environ[k] = v
+            except Exception as e:
+                print(f"Error loading env from {path}: {e}")
+
+_load_env_from_file()
+
 from typing import Optional
 
 from fastapi import FastAPI, HTTPException
