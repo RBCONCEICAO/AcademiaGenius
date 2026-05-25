@@ -1,6 +1,9 @@
 import json
+import logging
 from typing import List, Dict, Any
 from app.services.llm import call_llm
+
+logger = logging.getLogger(__name__)
 
 def translate_papers(
     papers: List[Dict[str, Any]],
@@ -60,7 +63,6 @@ REGRAS:
                     papers[idx]["abstract"] = item["resumo_pt"]
                     
     except Exception as e:
-        print(f"Erro na tradução em lote: {e}")
-        # Em caso de erro, retorna os artigos originais
+        logger.warning("Tradução em lote falhou, usando títulos originais: %s", e)
         
     return papers

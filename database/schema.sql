@@ -61,39 +61,39 @@ FOR ALL USING (auth.uid() = id) WITH CHECK (auth.uid() = id);
 
 
 --
--- Tabela: projetos
+-- Tabela: projects
 -- Representa um projeto de geração de conteúdo (TCC, Artigo, Estudo de Caso).
 --
-CREATE TABLE public.projetos (
+CREATE TABLE public.projects (
     id uuid DEFAULT uuid_generate_v4() PRIMARY KEY,
-    user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL, -- Vincula ao usuário que criou o projeto
+    user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
     titulo text NOT NULL,
     descricao text,
-    tema_pesquisa text NOT NULL, -- O tema informado pelo usuário
+    tema_pesquisa text NOT NULL,
     status project_status DEFAULT 'rascunho' NOT NULL,
-    configuracoes jsonb DEFAULT '{}'::jsonb, -- Configurações específicas do projeto (ex: formato de saída, estilo)
+    configuracoes jsonb DEFAULT '{}'::jsonb,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL
 );
 
 -- Índices para otimização
-CREATE INDEX idx_projetos_user_id ON public.projetos (user_id);
-CREATE INDEX idx_projetos_status ON public.projetos (status);
-CREATE INDEX idx_projetos_created_at ON public.projetos (created_at);
+CREATE INDEX idx_projects_user_id ON public.projects (user_id);
+CREATE INDEX idx_projects_status ON public.projects (status);
+CREATE INDEX idx_projects_created_at ON public.projects (created_at);
 
 -- Triggers para 'updated_at'
-CREATE TRIGGER set_timestamp_projetos
-BEFORE UPDATE ON public.projetos
+CREATE TRIGGER set_timestamp_projects
+BEFORE UPDATE ON public.projects
 FOR EACH ROW
 EXECUTE PROCEDURE update_timestamp();
 
 --
--- Row Level Security (RLS) para 'projetos'
+-- Row Level Security (RLS) para 'projects'
 --
-ALTER TABLE public.projetos ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.projects ENABLE ROW LEVEL SECURITY;
 
 -- Política para permitir que usuários acessem apenas seus próprios projetos
-CREATE POLICY "Usuários podem acessar seus próprios projetos." ON public.projetos
+CREATE POLICY "Usuários podem acessar seus próprios projetos." ON public.projects
 FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 
 
@@ -103,7 +103,7 @@ FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 --
 CREATE TABLE public.documentos_fonte (
     id uuid DEFAULT uuid_generate_v4() PRIMARY KEY,
-    projeto_id uuid REFERENCES public.projetos(id) ON DELETE CASCADE NOT NULL,
+    projeto_id uuid REFERENCES public.projects(id) ON DELETE CASCADE NOT NULL,
     user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL, -- Para RLS direto
     titulo text NOT NULL,
     autores text,
@@ -155,7 +155,7 @@ FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 --
 CREATE TABLE public.conhecimento_base (
     id uuid DEFAULT uuid_generate_v4() PRIMARY KEY,
-    projeto_id uuid REFERENCES public.projetos(id) ON DELETE CASCADE NOT NULL,
+    projeto_id uuid REFERENCES public.projects(id) ON DELETE CASCADE NOT NULL,
     user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL, -- Para RLS direto
     documento_fonte_id uuid REFERENCES public.documentos_fonte(id) ON DELETE SET NULL, -- Opcional: de qual documento veio
     tipo_informacao text, -- Ex: 'resumo', 'conceito_chave', 'citacao', 'analise'
@@ -192,7 +192,7 @@ FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 --
 CREATE TABLE public.conteudo_gerado (
     id uuid DEFAULT uuid_generate_v4() PRIMARY KEY,
-    projeto_id uuid REFERENCES public.projetos(id) ON DELETE CASCADE NOT NULL,
+    projeto_id uuid REFERENCES public.projects(id) ON DELETE CASCADE NOT NULL,
     user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL, -- Para RLS direto
     titulo text NOT NULL,
     formato text, -- Ex: 'TCC', 'Artigo Científico', 'Estudo de Caso'
@@ -255,7 +255,7 @@ GRANT EXECUTE ON FUNCTION public.handle_new_user() TO anon, authenticated;
 -- Permissões para as tabelas (apenas para o serviço anon/authenticated, RLS cuidará do resto)
 --
 GRANT ALL ON public.profiles TO anon, authenticated;
-GRANT ALL ON public.projetos TO anon, authenticated;
+GRANT ALL ON public.projects TO anon, authenticated;
 GRANT ALL ON public.documentos_fonte TO anon, authenticated;
 GRANT ALL ON public.conhecimento_base TO anon, authenticated;
 GRANT ALL ON public.conteudo_gerado TO anon, authenticated;
@@ -270,35 +270,6 @@ ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public
 GRANT ALL ON SEQUENCES TO anon, authenticated;
 ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public
 GRANT ALL ON FUNCTIONS TO anon, authenticated;
-
-
-
--- =====================
-
-
-
-npm install -g supabase
-# ou
-brew install supabase/supabase/supabase
-
-
--- =====================
-
-
-
-supabase init
-supabase login
-supabase link --project-ref <YOUR_SUPABASE_PROJECT_REF>
-
-
--- =====================
-
-
-
-supabase db pull
-
-
--- =====================
 
 
 

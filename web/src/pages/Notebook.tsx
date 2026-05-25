@@ -2,10 +2,11 @@ import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
   BookOpen, MessageCircle, HelpCircle, Clock, Mic,
-  Send, Loader2, ArrowLeft, ChevronDown, ChevronUp, ExternalLink
+  Send, Loader2, ArrowLeft, ChevronDown, ChevronUp, ExternalLink, Trash2
 } from 'lucide-react';
 import { getKeyForProvider } from '../lib/apiKeys';
 import { API_URL } from '../lib/config';
+import { authFetch } from '../lib/supabase';
 
 const API = `${API_URL}/api/v1/notebook`;
 const DEFAULT_MODEL = 'gemini-2.5-flash';
@@ -27,33 +28,81 @@ function useNotebookData() {
   };
 }
 
+// ── Banner de chave ausente ──────────────────────────────────────────────────
+function KeyMissingBanner() {
+  return (
+    <div className="flex flex-col items-center gap-3 bg-amber-50 border border-amber-200 rounded-xl px-6 py-5 text-center max-w-sm">
+      <p className="text-sm font-semibold text-amber-800">Chave de API não configurada</p>
+      <p className="text-xs text-amber-700 leading-relaxed">
+        Configure sua chave de API nas Configurações para usar esta funcionalidade.
+        Gemini e Groq possuem planos gratuitos.
+      </p>
+      <a href="/settings"
+        className="text-xs font-bold bg-amber-600 text-white px-4 py-2 rounded-lg hover:bg-amber-700 transition">
+        Ir para Configurações →
+      </a>
+    </div>
+  );
+}
+
+// ── helpers de persistência ──────────────────────────────────────────────────
+function chatStorageKey(theme: string) {
+  return `notebook_chat_${theme.trim().toLowerCase().replace(/\s+/g, '_').slice(0, 80)}`;
+}
+
+function loadChatHistory(theme: string): ChatMessage[] {
+  try {
+    const raw = localStorage.getItem(chatStorageKey(theme));
+    if (raw) return JSON.parse(raw) as ChatMessage[];
+  } catch { /* ignore */ }
+  return [];
+}
+
+function saveChatHistory(theme: string, messages: ChatMessage[]) {
+  try {
+    localStorage.setItem(chatStorageKey(theme), JSON.stringify(messages.slice(-60)));
+  } catch { /* ignore */ }
+}
+
 // ── Componente Chat ──────────────────────────────────────────────────────────
 function ChatTab({ theme, document, papers, apiKey, llmModel, llmProvider }: any) {
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    { role: 'assistant', content: `Olá! Sou seu assistente de pesquisa sobre **"${theme}"**. Tenho acesso a ${papers.length} artigos científicos. Faça qualquer pergunta sobre as fontes.` }
-  ]);
+  const greeting: ChatMessage = {
+    role: 'assistant',
+    content: `Olá! Sou seu assistente de pesquisa sobre **"${theme}"**. Tenho acesso a ${papers.length} artigos científicos. Faça qualquer pergunta sobre as fontes.`,
+  };
+
+  const [messages, setMessages] = useState<ChatMessage[]>(() => {
+    const saved = loadChatHistory(theme);
+    return saved.length > 0 ? saved : [greeting];
+  });
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [keyError, setKeyError] = useState(false);
+
+  // persiste sempre que messages muda (exceto estado inicial de 1 msg)
+  useEffect(() => {
+    if (messages.length > 1) saveChatHistory(theme, messages);
+  }, [messages, theme]);
+
+  const clearHistory = () => {
+    localStorage.removeItem(chatStorageKey(theme));
+    setMessages([greeting]);
+  };
 
   const send = async () => {
     if (!input.trim() || loading) return;
     const question = input.trim();
     setInput('');
     setMessages(m => [...m, { role: 'user', content: question }]);
-    
-    let currentKey = apiKey;
-    if (currentKey === 'server-fallback') {
-      currentKey = '';
-    } else if (!currentKey) {
-      currentKey = prompt('Sua chave de API não foi encontrada no contexto. Cole sua API Key para continuar:');
-      if (!currentKey) return;
-    }
+
+    let currentKey = apiKey === 'server-fallback' ? '' : apiKey;
+    if (!currentKey) { setKeyError(true); return; }
 
     setLoading(true);
     try {
       const history = messages.filter(m => m.role !== 'assistant' || messages.indexOf(m) > 0)
         .map(m => ({ role: m.role, content: m.content }));
-      const r = await fetch(`${API}/chat`, {
+      const r = await authFetch(`${API}/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ theme, document, papers, api_key: currentKey, llm_model: llmModel, llm_provider: llmProvider, question, history }),
@@ -69,6 +118,19 @@ function ChatTab({ theme, document, papers, apiKey, llmModel, llmProvider }: any
 
   return (
     <div className="flex flex-col h-full">
+      {keyError && (
+        <div className="mb-3 flex justify-center">
+          <KeyMissingBanner />
+        </div>
+      )}
+      {messages.length > 1 && !keyError && (
+        <div className="flex justify-end pb-2">
+          <button onClick={clearHistory}
+            className="flex items-center gap-1 text-xs text-gray-400 hover:text-red-500 transition">
+            <Trash2 className="w-3 h-3" /> Limpar histórico
+          </button>
+        </div>
+      )}
       <div className="flex-1 overflow-y-auto space-y-4 pb-4">
         {messages.map((m, i) => (
           <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
@@ -118,44 +180,43 @@ function StudyGuideTab({ theme, document, papers, apiKey, llmModel, llmProvider 
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState<number | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const generate = async () => {
-    let currentKey = apiKey;
-    if (currentKey === 'server-fallback') {
-      currentKey = '';
-    } else if (!currentKey) {
-      currentKey = prompt('Sua chave de API não foi encontrada no contexto. Cole sua API Key para continuar:');
-      if (!currentKey) return;
-    }
+    let currentKey = apiKey === 'server-fallback' ? '' : apiKey;
+    if (!currentKey) { setError('key'); return; }
+    setError(null);
     setLoading(true);
     try {
-      const r = await fetch(`${API}/study-guide`, {
+      const r = await authFetch(`${API}/study-guide`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ theme, document, papers, api_key: currentKey, llm_model: llmModel, llm_provider: llmProvider }),
       });
       const d = await r.json();
-      if (!r.ok) {
-        alert(`Erro na API: ${d.detail || 'Desconhecido'}`);
-        return;
-      }
+      if (!r.ok) { setError(d.detail || 'Erro desconhecido.'); return; }
       setData(d.guide);
     } catch (e: any) {
-      alert(`Erro de conexão: ${e.message}`);
-    } finally { 
-      setLoading(false); 
+      setError(e.message || 'Erro de conexão.');
+    } finally {
+      setLoading(false);
     }
   };
 
   if (!data) return (
     <div className="flex flex-col items-center justify-center h-48 gap-4">
-      <BookOpen className="w-12 h-12 text-indigo-200" />
-      <p className="text-gray-500 text-sm">Clique para gerar o Guia de Estudo com base nas fontes.</p>
-      <button onClick={generate} disabled={loading}
-        className="bg-primary text-white px-6 py-2.5 rounded-lg font-medium hover:bg-opacity-90 disabled:opacity-60 flex items-center gap-2">
-        {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <BookOpen className="w-4 h-4" />}
-        {loading ? 'Gerando...' : 'Gerar Guia de Estudo'}
-      </button>
+      {error === 'key'
+        ? <KeyMissingBanner />
+        : error ? <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-4 py-2">{error}</p>
+        : <><BookOpen className="w-12 h-12 text-indigo-200" /><p className="text-gray-500 text-sm">Clique para gerar o Guia de Estudo com base nas fontes.</p></>
+      }
+      {error !== 'key' && (
+        <button onClick={generate} disabled={loading}
+          className="bg-primary text-white px-6 py-2.5 rounded-lg font-medium hover:bg-opacity-90 disabled:opacity-60 flex items-center gap-2">
+          {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <BookOpen className="w-4 h-4" />}
+          {loading ? 'Gerando...' : 'Gerar Guia de Estudo'}
+        </button>
+      )}
     </div>
   );
 
@@ -229,36 +290,40 @@ function FaqTab({ theme, document, papers, apiKey, llmModel, llmProvider }: any)
   const [faq, setFaq] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState<number | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const generate = async () => {
-    let currentKey = apiKey;
-    if (currentKey === 'server-fallback') {
-      currentKey = '';
-    } else if (!currentKey) {
-      currentKey = prompt('Sua chave de API não foi encontrada no contexto. Cole sua API Key para continuar:');
-      if (!currentKey) return;
-    }
+    let currentKey = apiKey === 'server-fallback' ? '' : apiKey;
+    if (!currentKey) { setError('key'); return; }
+    setError(null);
     setLoading(true);
     try {
-      const r = await fetch(`${API}/faq`, {
+      const r = await authFetch(`${API}/faq`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ theme, document, papers, api_key: currentKey, llm_model: llmModel, llm_provider: llmProvider }),
       });
       const d = await r.json();
       setFaq(d.faq || []);
-    } catch { /* noop */ } finally { setLoading(false); }
+    } catch (e: any) {
+      setError(e.message || 'Erro de conexão.');
+    } finally { setLoading(false); }
   };
 
   if (!faq.length) return (
     <div className="flex flex-col items-center justify-center h-48 gap-4">
-      <HelpCircle className="w-12 h-12 text-indigo-200" />
-      <p className="text-gray-500 text-sm">Gera perguntas frequentes com respostas baseadas nas fontes.</p>
-      <button onClick={generate} disabled={loading}
-        className="bg-primary text-white px-6 py-2.5 rounded-lg font-medium hover:bg-opacity-90 disabled:opacity-60 flex items-center gap-2">
-        {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <HelpCircle className="w-4 h-4" />}
-        {loading ? 'Gerando...' : 'Gerar FAQ'}
-      </button>
+      {error === 'key'
+        ? <KeyMissingBanner />
+        : error ? <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-4 py-2">{error}</p>
+        : <><HelpCircle className="w-12 h-12 text-indigo-200" /><p className="text-gray-500 text-sm">Gera perguntas frequentes com respostas baseadas nas fontes.</p></>
+      }
+      {error !== 'key' && (
+        <button onClick={generate} disabled={loading}
+          className="bg-primary text-white px-6 py-2.5 rounded-lg font-medium hover:bg-opacity-90 disabled:opacity-60 flex items-center gap-2">
+          {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <HelpCircle className="w-4 h-4" />}
+          {loading ? 'Gerando...' : 'Gerar FAQ'}
+        </button>
+      )}
     </div>
   );
 
@@ -287,36 +352,40 @@ function FaqTab({ theme, document, papers, apiKey, llmModel, llmProvider }: any)
 function TimelineTab({ theme, document, papers, apiKey, llmModel, llmProvider }: any) {
   const [timeline, setTimeline] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const generate = async () => {
-    let currentKey = apiKey;
-    if (currentKey === 'server-fallback') {
-      currentKey = '';
-    } else if (!currentKey) {
-      currentKey = prompt('Sua chave de API não foi encontrada no contexto. Cole sua API Key para continuar:');
-      if (!currentKey) return;
-    }
+    let currentKey = apiKey === 'server-fallback' ? '' : apiKey;
+    if (!currentKey) { setError('key'); return; }
+    setError(null);
     setLoading(true);
     try {
-      const r = await fetch(`${API}/timeline`, {
+      const r = await authFetch(`${API}/timeline`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ theme, document, papers, api_key: currentKey, llm_model: llmModel, llm_provider: llmProvider }),
       });
       const d = await r.json();
       setTimeline(d.timeline || []);
-    } catch { /* noop */ } finally { setLoading(false); }
+    } catch (e: any) {
+      setError(e.message || 'Erro de conexão.');
+    } finally { setLoading(false); }
   };
 
   if (!timeline.length) return (
     <div className="flex flex-col items-center justify-center h-48 gap-4">
-      <Clock className="w-12 h-12 text-indigo-200" />
-      <p className="text-gray-500 text-sm">Extrai os marcos históricos e cronológicos da área.</p>
-      <button onClick={generate} disabled={loading}
-        className="bg-primary text-white px-6 py-2.5 rounded-lg font-medium hover:bg-opacity-90 disabled:opacity-60 flex items-center gap-2">
-        {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Clock className="w-4 h-4" />}
-        {loading ? 'Gerando...' : 'Gerar Linha do Tempo'}
-      </button>
+      {error === 'key'
+        ? <KeyMissingBanner />
+        : error ? <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-4 py-2">{error}</p>
+        : <><Clock className="w-12 h-12 text-indigo-200" /><p className="text-gray-500 text-sm">Extrai os marcos históricos e cronológicos da área.</p></>
+      }
+      {error !== 'key' && (
+        <button onClick={generate} disabled={loading}
+          className="bg-primary text-white px-6 py-2.5 rounded-lg font-medium hover:bg-opacity-90 disabled:opacity-60 flex items-center gap-2">
+          {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Clock className="w-4 h-4" />}
+          {loading ? 'Gerando...' : 'Gerar Linha do Tempo'}
+        </button>
+      )}
     </div>
   );
 
@@ -349,47 +418,49 @@ function AudioTab({ theme, document, papers, apiKey, llmModel, llmProvider }: an
   const [script, setScript] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [duration, setDuration] = useState(5);
+  const [error, setError] = useState<string | null>(null);
 
   const generate = async () => {
-    let currentKey = apiKey;
-    if (currentKey === 'server-fallback') {
-      currentKey = '';
-    } else if (!currentKey) {
-      currentKey = prompt('Sua chave de API não foi encontrada no contexto. Cole sua API Key para continuar:');
-      if (!currentKey) return;
-    }
+    let currentKey = apiKey === 'server-fallback' ? '' : apiKey;
+    if (!currentKey) { setError('key'); return; }
+    setError(null);
     setLoading(true);
     try {
-      const r = await fetch(`${API}/audio-script`, {
+      const r = await authFetch(`${API}/audio-script`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ theme, document, papers, api_key: currentKey, llm_model: llmModel, llm_provider: llmProvider, duration_minutes: duration }),
       });
       const d = await r.json();
       setScript(d.script);
-    } catch { /* noop */ } finally { setLoading(false); }
+    } catch (e: any) {
+      setError(e.message || 'Erro de conexão.');
+    } finally { setLoading(false); }
   };
 
   if (!script) return (
     <div className="flex flex-col items-center justify-center h-56 gap-4">
-      <Mic className="w-12 h-12 text-indigo-200" />
-      <p className="text-gray-500 text-sm text-center max-w-xs">
-        Gera um roteiro dialógico estilo podcast com 2 apresentadores baseado nas fontes.
-      </p>
-      <div className="flex items-center gap-3">
-        <label className="text-sm text-gray-600">Duração:</label>
-        {[3, 5, 10].map(d => (
-          <button key={d} onClick={() => setDuration(d)}
-            className={`px-3 py-1.5 rounded-md text-sm font-medium transition ${duration === d ? 'bg-primary text-white' : 'border border-gray-300 text-gray-600 hover:bg-gray-50'}`}>
-            {d} min
-          </button>
-        ))}
-      </div>
-      <button onClick={generate} disabled={loading}
-        className="bg-primary text-white px-6 py-2.5 rounded-lg font-medium hover:bg-opacity-90 disabled:opacity-60 flex items-center gap-2">
-        {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mic className="w-4 h-4" />}
-        {loading ? 'Gerando roteiro...' : 'Gerar Audio Overview'}
-      </button>
+      {error === 'key' ? <KeyMissingBanner /> : <>
+        {error && <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-4 py-2">{error}</p>}
+        <Mic className="w-12 h-12 text-indigo-200" />
+        <p className="text-gray-500 text-sm text-center max-w-xs">
+          Gera um roteiro dialógico estilo podcast com 2 apresentadores baseado nas fontes.
+        </p>
+        <div className="flex items-center gap-3">
+          <label className="text-sm text-gray-600">Duração:</label>
+          {[3, 5, 10].map(d => (
+            <button key={d} onClick={() => setDuration(d)}
+              className={`px-3 py-1.5 rounded-md text-sm font-medium transition ${duration === d ? 'bg-primary text-white' : 'border border-gray-300 text-gray-600 hover:bg-gray-50'}`}>
+              {d} min
+            </button>
+          ))}
+        </div>
+        <button onClick={generate} disabled={loading}
+          className="bg-primary text-white px-6 py-2.5 rounded-lg font-medium hover:bg-opacity-90 disabled:opacity-60 flex items-center gap-2">
+          {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mic className="w-4 h-4" />}
+          {loading ? 'Gerando roteiro...' : 'Gerar Audio Overview'}
+        </button>
+      </>}
     </div>
   );
 

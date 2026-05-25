@@ -11,9 +11,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Copiar dependências
 COPY requirements.txt .
 
-# Instalar dependências do requirements e pacotes extras de parsing utilizados em main.py
 RUN pip install --no-cache-dir -r requirements.txt
-RUN pip install --no-cache-dir PyPDF2 python-docx python-multipart
 
 # Copiar restante do código da API
 COPY . .

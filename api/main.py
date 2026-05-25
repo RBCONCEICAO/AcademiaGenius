@@ -1,4 +1,13 @@
 import os
+import json
+import logging
+import asyncio
+import requests
+from collections import defaultdict
+from time import time
+from threading import Thread
+
+logger = logging.getLogger(__name__)
 
 # --- Zero-Dependency Local .env Loader ---
 def _load_env_from_file():
@@ -15,15 +24,33 @@ def _load_env_from_file():
                             if k and v and k not in os.environ:
                                 os.environ[k] = v
             except Exception as e:
-                print(f"Error loading env from {path}: {e}")
+                logger.warning("Error loading env from %s: %s", path, e)
 
 _load_env_from_file()
 
 from typing import Optional
 
-from fastapi import FastAPI, HTTPException
+# ── Rate limiter em memória ──────────────────────────────────────────────────
+# 5 pesquisas por usuário a cada 60 segundos (janela deslizante)
+_rl_window: dict = defaultdict(list)
+_RL_MAX   = 5
+_RL_SECS  = 60
+
+def _check_rate_limit(user_id: str) -> None:
+    now  = time()
+    cutoff = now - _RL_SECS
+    hits = [t for t in _rl_window[user_id] if t > cutoff]
+    if len(hits) >= _RL_MAX:
+        raise HTTPException(
+            status_code=429,
+            detail=f"Limite de {_RL_MAX} pesquisas por minuto atingido. Aguarde antes de iniciar uma nova.",
+        )
+    hits.append(now)
+    _rl_window[user_id] = hits
+
+from fastapi import FastAPI, HTTPException, Header, Depends
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import Response
+from fastapi.responses import Response, StreamingResponse
 from pydantic import BaseModel
 
 from app.agents.orchestrator import run_research_pipeline
@@ -37,10 +64,38 @@ from app.services.notebook_service import (
     generate_audio_script,
 )
 
+def get_current_user(authorization: Optional[str] = Header(None)) -> dict:
+    """Valida o JWT do Supabase. Modo dev (sem SUPABASE_URL) pula a validação."""
+    supabase_url = os.environ.get("SUPABASE_URL", "").rstrip("/")
+    supabase_anon_key = os.environ.get("SUPABASE_ANON_KEY", "")
+
+    if not supabase_url or not supabase_anon_key:
+        return {"id": "dev"}
+
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Autenticação necessária.")
+
+    token = authorization[len("Bearer "):]
+    try:
+        resp = requests.get(
+            f"{supabase_url}/auth/v1/user",
+            headers={"Authorization": f"Bearer {token}", "apikey": supabase_anon_key},
+            timeout=5,
+        )
+    except Exception:
+        raise HTTPException(status_code=503, detail="Serviço de autenticação indisponível.")
+
+    if resp.status_code != 200:
+        raise HTTPException(status_code=401, detail="Token inválido ou expirado. Faça login novamente.")
+
+    return resp.json()
+
+
 def resolve_api_key(user_key: Optional[str], provider: str) -> str:
     """
     Resolve a API Key: retorna a chave inserida pelo usuário se presente,
     ou busca a chave correspondente configurada nas variáveis de ambiente do servidor (.env).
+    Retorna 'FREE_FALLBACK' se o provedor for gratuito (Gemini ou Groq) e nenhuma chave for encontrada.
     """
     if user_key and user_key.strip():
         return user_key.strip()
@@ -59,6 +114,9 @@ def resolve_api_key(user_key: Optional[str], provider: str) -> str:
         if server_key and server_key.strip():
             return server_key.strip()
             
+    if provider.lower() in ["gemini", "groq"]:
+        return "FREE_FALLBACK"
+            
     raise HTTPException(
         status_code=401, 
         detail=f"Chave de API não fornecida para o provedor {provider} e nenhuma chave correspondente ativa no servidor. Configure a chave para continuar."
@@ -69,9 +127,13 @@ app = FastAPI(title="AcademiaGenius API", version="1.0.0")
 # ============================================================
 # CORS - Permite que o frontend converse com a API
 # ============================================================
+_cors_regex = os.environ.get(
+    "ALLOWED_ORIGINS_REGEX",
+    r"https?://(localhost|127\.0\.0\.1|ai-studio-applet-webapp-e4526\.web\.app)(:\d+)?",
+)
 app.add_middleware(
     CORSMiddleware,
-    allow_origin_regex=r"http://(localhost|127\.0\.0\.1)(:\d+)?",
+    allow_origin_regex=_cors_regex,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -107,7 +169,7 @@ class GenerateResponse(BaseModel):
     status: str
 
 @app.post("/api/v1/generate", response_model=GenerateResponse)
-async def generate_content(request: GenerateRequest):
+async def generate_content(request: GenerateRequest, _user: dict = Depends(get_current_user)):
     if not request.theme or len(request.theme) < 5:
         raise HTTPException(status_code=422, detail="O tema deve ter pelo menos 5 caracteres.")
 
@@ -176,11 +238,18 @@ from fastapi import UploadFile, File
 import PyPDF2
 import io
 
+_MAX_FILE_BYTES = 20 * 1024 * 1024  # 20 MB
+
 @app.post("/api/v1/extract_text")
-async def extract_text_from_files(files: list[UploadFile] = File(...)):
+async def extract_text_from_files(files: list[UploadFile] = File(...), _user: dict = Depends(get_current_user)):
     extracted_texts = []
     for file in files:
         content = await file.read()
+        if len(content) > _MAX_FILE_BYTES:
+            raise HTTPException(
+                status_code=413,
+                detail=f"Arquivo '{file.filename}' excede o limite de 20 MB.",
+            )
         filename = file.filename.lower()
         
         try:
@@ -224,7 +293,7 @@ async def extract_text_from_files(files: list[UploadFile] = File(...)):
     return {"text": "\n".join(extracted_texts)}
 
 @app.post("/api/v1/research/clarify")
-async def research_clarify(request: ClarifyRequest):
+async def research_clarify(request: ClarifyRequest, _user: dict = Depends(get_current_user)):
     if not request.theme or len(request.theme) < 5:
         raise HTTPException(status_code=422, detail="O tema deve ter pelo menos 5 caracteres.")
     
@@ -243,37 +312,41 @@ async def research_clarify(request: ClarifyRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+def _resolve_fast_pipeline(request: ResearchRequest) -> tuple:
+    """Resolve fast_provider / fast_model / fast_key a partir dos aliases groq_key / mistral_key."""
+    fast_provider = request.fast_provider
+    fast_model    = request.fast_model
+    fast_key      = request.fast_key
+
+    if not fast_provider and request.groq_key:
+        fast_provider = "groq"
+        fast_model    = fast_model or "llama-3.3-70b-versatile"
+        fast_key      = request.groq_key
+    elif not fast_provider and request.mistral_key:
+        fast_provider = "mistral"
+        fast_model    = fast_model or "mistral-small-latest"
+        fast_key      = request.mistral_key
+
+    if fast_provider and not fast_key:
+        try:
+            fast_key = resolve_api_key(None, fast_provider)
+        except Exception:
+            pass
+
+    return fast_provider, fast_model, fast_key
+
+
 @app.post("/api/v1/research", response_model=ResearchResponse)
-async def run_research(request: ResearchRequest):
+async def run_research(request: ResearchRequest, _user: dict = Depends(get_current_user)):
     if not request.theme or len(request.theme) < 5:
         raise HTTPException(status_code=422, detail="O tema deve ter pelo menos 5 caracteres.")
 
-    # Resolve a API Key principal de forma flexível
+    _check_rate_limit(_user.get("id", "anon"))
+
     api_key = resolve_api_key(request.api_key, request.llm_provider)
+    fast_provider, fast_model, fast_key = _resolve_fast_pipeline(request)
 
     try:
-        # Resolve pipeline mode
-        fast_provider = request.fast_provider
-        fast_model    = request.fast_model
-        fast_key      = request.fast_key
-
-        if not fast_provider and request.groq_key:
-            fast_provider = "groq"
-            fast_model    = fast_model or "llama-3.3-70b-versatile"
-            fast_key      = request.groq_key
-        elif not fast_provider and request.mistral_key:
-            fast_provider = "mistral"
-            fast_model    = fast_model or "mistral-small-latest"
-            fast_key      = request.mistral_key
-
-        # Se houver um provedor rápido configurado mas nenhuma chave fornecida pelo usuário,
-        # tenta resolver a chave a partir das variáveis de ambiente do servidor.
-        if fast_provider and not fast_key:
-            try:
-                fast_key = resolve_api_key(None, fast_provider)
-            except Exception:
-                pass
-
         result = run_research_pipeline(
             theme=request.theme,
             doc_type=request.doc_type,
@@ -307,6 +380,87 @@ async def run_research(request: ResearchRequest):
 
 
 # ============================================================
+# Endpoint de Pesquisa com Streaming SSE
+# ============================================================
+@app.post("/api/v1/research/stream")
+async def run_research_stream(request: ResearchRequest, _user: dict = Depends(get_current_user)):
+    """Mesmo pipeline de /research mas envia eventos SSE conforme cada etapa conclui."""
+    if not request.theme or len(request.theme) < 5:
+        raise HTTPException(status_code=422, detail="O tema deve ter pelo menos 5 caracteres.")
+
+    _check_rate_limit(_user.get("id", "anon"))
+
+    api_key = resolve_api_key(request.api_key, request.llm_provider)
+    fast_provider, fast_model, fast_key = _resolve_fast_pipeline(request)
+
+    loop = asyncio.get_event_loop()
+    queue: asyncio.Queue = asyncio.Queue()
+
+    def on_progress(event: dict):
+        loop.call_soon_threadsafe(queue.put_nowait, {"type": "progress", "event": event})
+
+    def run():
+        try:
+            result = run_research_pipeline(
+                theme=request.theme,
+                doc_type=request.doc_type,
+                provider=request.llm_provider,
+                model=request.llm_model,
+                api_key=api_key,
+                norm=request.norm or "ABNT",
+                paper_limit=request.paper_limit or 8,
+                query_en=request.query_en,
+                include_universities=request.include_universities if request.include_universities is not None else True,
+                semantic_scholar_key=request.semantic_scholar_key,
+                pubmed_key=request.pubmed_key,
+                core_key=request.core_key,
+                fast_provider=fast_provider,
+                fast_model=fast_model,
+                fast_key=fast_key,
+                existing_document=request.existing_document,
+                clarifications=request.clarifications,
+                progress_callback=on_progress,
+            )
+            loop.call_soon_threadsafe(queue.put_nowait, {
+                "type": "done",
+                "result": {
+                    "document": result["document"],
+                    "papers": result["papers"],
+                    "stats": result["stats"],
+                    "steps_log": result["steps_log"],
+                    "status": "success",
+                },
+            })
+        except Exception as e:
+            loop.call_soon_threadsafe(queue.put_nowait, {"type": "error", "detail": str(e)})
+
+    Thread(target=run, daemon=True).start()
+
+    async def event_stream():
+        loop = asyncio.get_event_loop()
+        deadline = loop.time() + 300
+        while True:
+            remaining = deadline - loop.time()
+            if remaining <= 0:
+                yield f"data: {json.dumps({'type': 'error', 'detail': 'Timeout: pipeline demorou mais de 5 minutos.'})}\n\n"
+                break
+            try:
+                event = await asyncio.wait_for(queue.get(), timeout=min(15.0, remaining))
+            except asyncio.TimeoutError:
+                yield f"data: {json.dumps({'type': 'heartbeat'})}\n\n"
+                continue
+            yield f"data: {json.dumps(event, ensure_ascii=False)}\n\n"
+            if event.get("type") in ("done", "error"):
+                break
+
+    return StreamingResponse(
+        event_stream(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
+
+
+# ============================================================
 # Endpoint de Export DOCX
 # ============================================================
 class ExportDocxRequest(BaseModel):
@@ -316,7 +470,7 @@ class ExportDocxRequest(BaseModel):
 
 
 @app.post("/api/v1/export/docx")
-async def export_docx_endpoint(request: ExportDocxRequest):
+async def export_docx_endpoint(request: ExportDocxRequest, _user: dict = Depends(get_current_user)):
     if not request.document:
         raise HTTPException(status_code=422, detail="Documento vazio.")
 
@@ -364,7 +518,7 @@ class AudioScriptRequest(NotebookBase):
 
 
 @app.post("/api/v1/notebook/chat")
-async def notebook_chat(request: ChatRequest):
+async def notebook_chat(request: ChatRequest, _user: dict = Depends(get_current_user)):
     """Chat com a pesquisa usando RAG sobre os papers e o documento."""
     api_key = resolve_api_key(request.api_key, request.llm_provider)
     try:
@@ -383,7 +537,7 @@ async def notebook_chat(request: ChatRequest):
 
 
 @app.post("/api/v1/notebook/study-guide")
-async def notebook_study_guide(request: NotebookBase):
+async def notebook_study_guide(request: NotebookBase, _user: dict = Depends(get_current_user)):
     """Gera um Guia de Estudo estruturado a partir das fontes."""
     api_key = resolve_api_key(request.api_key, request.llm_provider)
     try:
@@ -401,7 +555,7 @@ async def notebook_study_guide(request: NotebookBase):
 
 
 @app.post("/api/v1/notebook/faq")
-async def notebook_faq(request: NotebookBase):
+async def notebook_faq(request: NotebookBase, _user: dict = Depends(get_current_user)):
     """Gera FAQ automático com base nas fontes da pesquisa."""
     api_key = resolve_api_key(request.api_key, request.llm_provider)
     try:
@@ -419,7 +573,7 @@ async def notebook_faq(request: NotebookBase):
 
 
 @app.post("/api/v1/notebook/timeline")
-async def notebook_timeline(request: NotebookBase):
+async def notebook_timeline(request: NotebookBase, _user: dict = Depends(get_current_user)):
     """Extrai linha do tempo dos marcos da área de pesquisa."""
     api_key = resolve_api_key(request.api_key, request.llm_provider)
     try:
@@ -437,7 +591,7 @@ async def notebook_timeline(request: NotebookBase):
 
 
 @app.post("/api/v1/notebook/audio-script")
-async def notebook_audio_script(request: AudioScriptRequest):
+async def notebook_audio_script(request: AudioScriptRequest, _user: dict = Depends(get_current_user)):
     """Gera roteiro dialógico estilo podcast (Audio Overview)."""
     api_key = resolve_api_key(request.api_key, request.llm_provider)
     try:

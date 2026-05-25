@@ -27,3 +27,16 @@ export async function getSession() {
   const { data } = await supabase.auth.getSession();
   return data.session;
 }
+
+/** fetch com Authorization: Bearer <token> injetado automaticamente */
+export async function authFetch(url: string, options: RequestInit = {}): Promise<Response> {
+  const { data } = await supabase.auth.getSession();
+  const token = data.session?.access_token;
+  return fetch(url, {
+    ...options,
+    headers: {
+      ...(options.headers as Record<string, string> | undefined),
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+  });
+}

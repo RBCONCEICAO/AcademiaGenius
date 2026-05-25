@@ -17,6 +17,9 @@ def _build_corpus_text(papers: List[Dict], document: str) -> str:
     """Monta o corpus textual a partir dos papers e do documento gerado."""
     parts = [f"# DOCUMENTO GERADO\n\n{document}\n\n---\n\n# FONTES CIENTÍFICAS\n"]
     for i, p in enumerate(papers, 1):
+        abstract = p.get('abstract', '')
+        if len(abstract) > 500:
+            abstract = abstract[:500] + "..."
         parts.append(
             f"\n## Fonte {i}: {p.get('title', '')}\n"
             f"**Autores:** {p.get('authors', '')}\n"
@@ -24,7 +27,7 @@ def _build_corpus_text(papers: List[Dict], document: str) -> str:
             f"**Base:** {p.get('source', '')}\n"
             f"**Citações:** {p.get('citation_count', 0)}\n"
             f"**DOI:** {p.get('doi', '')}\n\n"
-            f"**Abstract:** {p.get('abstract', '')}\n\n"
+            f"**Abstract:** {abstract}\n\n"
             f"**Referência ABNT:** {p.get('abnt_reference', '')}\n"
         )
     return "\n".join(parts)

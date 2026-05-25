@@ -224,68 +224,49 @@ def search_scielo(query: str, limit: int = 10) -> List[Dict]:
 # ---------------------------------------------------------------------------
 
 def search_bdtd(query: str, limit: int = 10) -> List[Dict]:
-    """
-    Busca na BDTD. Tenta o endpoint OAI-PMH correto da IBICT.
-    """
-    return _search_bdtd_oai(query, limit)
-
-
-def _search_bdtd_oai(query: str, limit: int) -> List[Dict]:
-    """Busca OAI-PMH na BDTD com filtragem por keyword."""
+    """Busca teses e dissertações brasileiras via API VuFind da BDTD/IBICT."""
     results = []
-    # Endpoints OAI-PMH conhecidos da BDTD/IBICT
-    oai_urls = [
-        "https://bdtd.ibict.br/vufind/OAI/Server",
-        "https://oasisbr.ibict.br/vufind/OAI/Server",
-    ]
-    for oai_url in oai_urls:
-        try:
-            params = {"verb": "ListRecords", "metadataPrefix": "oai_dc"}
-            r = requests.get(
-                oai_url, params=params,
-                headers={"User-Agent": "AcademiaGenius/2.0 (contact@academiagenius.app)"},
-                timeout=25,
-            )
-            if r.status_code != 200:
-                logger.warning("BDTD OAI %s returned %s", oai_url, r.status_code)
+    try:
+        # VuFind exige field[] como parâmetros repetidos (lista de tuples)
+        params = [
+            ("lookfor", query),
+            ("type", "AllFields"),
+            ("limit", str(min(limit, 20))),
+            ("sort", "relevance"),
+            ("field[]", "title"),
+            ("field[]", "authors"),
+            ("field[]", "summary"),
+            ("field[]", "publicationDates"),
+            ("field[]", "urls"),
+        ]
+        r = requests.get(
+            "https://bdtd.ibict.br/vufind/api/v1/search",
+            params=params,
+            headers={"User-Agent": "AcademiaGenius/2.0", "Accept": "application/json"},
+            timeout=20,
+        )
+        r.raise_for_status()
+        for rec in r.json().get("records", []):
+            title = (rec.get("title") or "").strip()
+            if not title:
                 continue
-            # Verifica que é XML
-            if not r.content.lstrip()[:5] in (b"<?xml", b"<OAI-"):
-                logger.warning("BDTD %s não retornou XML válido", oai_url)
+            summary_list = rec.get("summary") or []
+            abstract = " ".join(summary_list).strip()
+            if len(abstract) < 80:
                 continue
-            ns = {
-                "oai":    "http://www.openarchives.org/OAI/2.0/",
-                "dc":     "http://purl.org/dc/elements/1.1/",
-                "oai_dc": "http://www.openarchives.org/OAI/2.0/oai_dc/",
-            }
-            root = ET.fromstring(r.content)
-            q_tokens = set(t for t in query.lower().split() if len(t) > 3)
-            for record in root.findall(".//oai:record", ns):
-                meta = record.find(".//oai_dc:dc", ns)
-                if meta is None:
-                    continue
-                title = meta.findtext("dc:title", "", ns)
-                abstract = meta.findtext("dc:description", "", ns)
-                combined = (title + " " + abstract).lower()
-                matches = sum(1 for t in q_tokens if t in combined)
-                if matches < 2 or len(abstract) < 80:
-                    continue
-                creator = meta.findtext("dc:creator", "Autor desconhecido", ns)
-                date = (meta.findtext("dc:date", "", ns) or "")[:4]
-                identifier = meta.findtext("dc:identifier", "", ns) or ""
-                results.append(_make_paper(
-                    title=title, authors=creator, year=date, abstract=abstract,
-                    doi="", url=identifier, citation_count=0,
-                    source="BDTD", language="pt",
-                ))
-                if len(results) >= limit:
-                    break
-            if results:
-                break
-        except ET.ParseError as e:
-            logger.warning("BDTD XML parse error (%s): %s", oai_url, e)
-        except Exception as e:
-            logger.warning("BDTD OAI error (%s): %s", oai_url, e)
+            authors_raw = rec.get("authors", {}).get("primary", {})
+            authors = "; ".join(list(authors_raw.keys())[:3]) or "Autor desconhecido"
+            dates = rec.get("publicationDates") or []
+            year = str(dates[0])[:4] if dates else None
+            urls = rec.get("urls") or []
+            url = urls[0].get("url", "") if urls else ""
+            results.append(_make_paper(
+                title=title, authors=authors, year=year, abstract=abstract,
+                doi="", url=url, citation_count=0,
+                source="BDTD", language="pt",
+            ))
+    except Exception as e:
+        logger.warning("BDTD VuFind error: %s", e)
     return results
 
 
@@ -351,7 +332,6 @@ def search_pubmed(query: str, limit: int = 10, api_key: Optional[str] = None) ->
 def search_arxiv(query: str, limit: int = 10) -> List[Dict]:
     results = []
     try:
-        time.sleep(3)  # arXiv exige respeito ao rate limit: min 3s entre chamadas
         params = {
             "search_query": f"all:{query}",
             "max_results": min(limit, 15),
@@ -617,9 +597,9 @@ def multi_source_search(
                     if papers:
                         all_papers.extend(papers)
                         sources_searched.append(name)
-                        logger.info("%-20s → %d artigos", name, len(papers))
+                        logger.info("%-20s -> %d artigos", name, len(papers))
                     else:
-                        logger.info("%-20s → 0 artigos (sem resultados)", name)
+                        logger.info("%-20s -> 0 artigos (sem resultados)", name)
                 except Exception as e:
                     logger.warning("Fonte %s falhou: %s", name, e)
         except Exception as e:
@@ -639,7 +619,7 @@ def multi_source_search(
                         papers = future.result()
                         if papers:
                             all_papers.extend(papers)
-                            logger.info("Repositório %-10s → %d artigos", uni, len(papers))
+                            logger.info("Repositório %-10s -> %d artigos", uni, len(papers))
                     except Exception:
                         pass
             except Exception as e:

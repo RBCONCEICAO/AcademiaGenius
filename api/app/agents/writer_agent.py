@@ -64,31 +64,31 @@ def write_document(
 
     # Estruturas Dinâmicas por Tipo de Documento
     structures = {
-        "tcc": """1. **Introdução** — Contextualização profunda, justificativa, problema e objetivos (geral e específicos). Cite os autores.
-2. **Referencial Teórico** — Revisão bibliográfica extensa e cruzamento de autores. Debata os textos, não apenas liste.
-3. **Metodologia da Pesquisa** — Como a pesquisa teórica e os testes foram estruturados.
-4. **Programa Experimental e Simulações (Ex: PLAXIS 2D)** — Descreva detalhadamente a modelagem numérica, parâmetros e fases de cálculo.
-5. **Resultados e Discussão** — Apresentação dos achados cruzados com as simulações.
-6. **Considerações Finais** — Síntese autoral e lacunas futuras.
-7. **Referências Bibliográficas** — Lista de todas as fontes no padrão exigido.
-8. **Quadro Comparativo do Estado da Arte** — Uma tabela obrigatória em Markdown comparando todos os artigos estudados (Colunas: Autor, Ano, Metodologia, Foco Principal, Limitações).""",
-        
-        "artigo": """1. **Resumo e Palavras-chave** — Síntese do artigo em um parágrafo.
-2. **Introdução** — Contexto, lacuna de pesquisa e objetivo do artigo.
-3. **Fundamentação Teórica** — Principais conceitos da literatura.
-4. **Materiais e Métodos (incluindo Simulações)** — Como o estudo foi conduzido, incluindo modelagem (Ex: PLAXIS 2D) se aplicável.
-5. **Resultados e Discussão** — Análise dos dados e comparação com a literatura.
-6. **Conclusão** — Fechamento conciso.
-7. **Referências Bibliográficas** — Lista de fontes.
+        "tcc": """1. **Introdução** — Contextualização profunda, justificativa, problema de pesquisa e objetivos (geral e específicos). Cite os autores reais.
+2. **Referencial Teórico** — Revisão bibliográfica extensa com cruzamento crítico entre os autores. Debata as ideias, não apenas liste-as.
+3. **Metodologia da Pesquisa** — Descreva detalhadamente como a investigação foi estruturada: tipo de pesquisa, procedimentos, instrumentos e critérios de seleção das fontes.
+4. **Desenvolvimento e Análise** — Núcleo do trabalho: desenvolva a análise central conforme a natureza do tema (pode envolver modelagem, experimentos, análise documental, estudo de campo ou simulações, conforme aplicável ao contexto).
+5. **Resultados e Discussão** — Apresente os achados e cruze-os com a literatura revisada.
+6. **Considerações Finais** — Síntese autoral, limitações do estudo e direções para pesquisas futuras.
+7. **Referências Bibliográficas** — Liste todas as fontes no padrão normativo exigido.
+8. **Quadro Comparativo do Estado da Arte** — Tabela obrigatória em Markdown comparando todos os artigos revisados (Colunas: Autor, Ano, Metodologia, Foco Principal, Limitações).""",
+
+        "artigo": """1. **Resumo e Palavras-chave** — Síntese do artigo em até 250 palavras, seguida das palavras-chave.
+2. **Introdução** — Contexto, identificação da lacuna de pesquisa e objetivo do estudo.
+3. **Fundamentação Teórica** — Desenvolvimento crítico dos principais conceitos e correntes da literatura.
+4. **Materiais e Métodos** — Descrição detalhada de como o estudo foi conduzido: abordagem, instrumentos, coleta e análise de dados.
+5. **Resultados e Discussão** — Análise dos dados obtidos e comparação com a literatura existente.
+6. **Conclusão** — Fechamento conciso com contribuições do estudo e sugestões para investigações futuras.
+7. **Referências Bibliográficas** — Lista completa de fontes no padrão normativo.
 8. **Quadro Comparativo** — Tabela em Markdown comparando a literatura revisada (Autor, Metodologia, Resultados, Limitações).""",
 
-        "estudo": """1. **Introdução ao Caso** — Contextualização do problema prático e objetivo do estudo.
-2. **Revisão da Literatura** — Base teórica para sustentar a análise do caso.
-3. **Apresentação do Caso e Metodologia** — Detalhes práticos do objeto de estudo (Ex: Modelagem e Testes no PLAXIS 2D).
-4. **Análise Crítica e Discussão dos Resultados** — Cruzamento entre a teoria e o caso prático.
-5. **Conclusões e Recomendações** — Lições aprendidas e propostas de solução.
-6. **Referências Bibliográficas** — Lista de fontes.
-7. **Matriz de Similaridade** — Tabela em Markdown cruzando o caso estudado com os artigos base (Referência, Contribuição para o Caso, Diferenças)."""
+        "estudo": """1. **Introdução ao Caso** — Contextualização do problema prático, relevância e objetivo do estudo.
+2. **Revisão da Literatura** — Base teórica necessária para sustentar a análise do caso.
+3. **Apresentação do Caso e Metodologia** — Descrição detalhada do objeto de estudo e dos procedimentos de investigação adotados.
+4. **Análise Crítica e Discussão dos Resultados** — Cruzamento rigoroso entre a teoria revisada e o caso prático analisado.
+5. **Conclusões e Recomendações** — Lições aprendidas, implicações práticas e propostas de encaminhamento.
+6. **Referências Bibliográficas** — Lista de fontes no padrão normativo.
+7. **Matriz de Similaridade** — Tabela em Markdown cruzando o caso com os artigos de base (Referência, Contribuição para o Caso, Diferenças Identificadas).""",
     }
 
     estrutura_texto = structures.get(doc_type, structures["tcc"])

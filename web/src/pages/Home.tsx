@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { Loader2, X, CheckCircle, Search, Brain, FileText, ExternalLink, Download, FolderPlus, BookOpen, PlusCircle } from 'lucide-react';
 import { getKeyForProvider, getSemanticScholarKey, loadApiKeys } from '../lib/apiKeys';
+import { authFetch } from '../lib/supabase';
 import type { ApiKeys } from '../lib/apiKeys';
 import { createProject, saveProject } from '../lib/projectsStorage';
 import { API_URL } from '../lib/config';
@@ -60,6 +61,7 @@ interface Paper {
   doi: string;
   url: string;
   abnt_reference: string;
+  source?: string;
 }
 
 interface ResearchResult {
@@ -139,37 +141,6 @@ export function Home() {
     }
   }, [location.state]);
 
-  // --- Terminal Logs Simulation ---
-  const STEP_1_LOGS = [
-    "Traduzindo tema central para busca científica internacional...",
-    "Tema traduzido com sucesso para a base global.",
-    "Consultando banco de dados do Semantic Scholar...",
-    "Buscando publicações indexadas na base de dados PubMed...",
-    "Buscando publicações indexadas no repositório CORE...",
-    "Cruzando referências bibliográficas encontradas...",
-    "Localizados 14 artigos científicos relevantes."
-  ];
-
-  const STEP_2_LOGS = [
-    "Iniciando Agente de Alinhamento Semântico...",
-    "Filtrando artigos com base nas respostas de escopo do Copiloto...",
-    "Analisando compatibilidade de domínio dos artigos encontrados...",
-    "Removendo artigos com sobreposição e desvios semânticos...",
-    "Artigos cientificamente validados com sucesso!",
-    "Extraindo dados estatísticos e métricas de impacto de citação...",
-    "Agrupando base de conhecimento para a redação acadêmica..."
-  ];
-
-  const STEP_3_LOGS = [
-    "Compilando base de conhecimento estruturada...",
-    "Formatando referências científicas conforme as normas especificadas...",
-    "Redigindo Introdução com contextualização do tema...",
-    "Redigindo seção de Metodologia com base nos artigos selecionados...",
-    "Desenvolvendo seção de Resultados e Discussão de dados...",
-    "Estruturando conclusão e limitações do estudo...",
-    "Finalizando formatação final do documento acadêmico..."
-  ];
-
   useEffect(() => {
     if (terminalEndRef.current) {
       terminalEndRef.current.scrollIntoView({ behavior: 'smooth' });
@@ -179,47 +150,8 @@ export function Home() {
   useEffect(() => {
     if (!loading) {
       setTerminalLogs([]);
-      return;
     }
-
-    setTerminalLogs([
-      `[${new Date().toLocaleTimeString()}] [SISTEMA] Inicializando pipeline de agentes do AcademiaGenius...`,
-      `[${new Date().toLocaleTimeString()}] [SISTEMA] Conectando com a API do provedor de IA escolhido...`
-    ]);
-
-    let logIndex = 0;
-    const interval = setInterval(() => {
-      // Find which step is running
-      const runningStepIndex = stepStatuses.findIndex(s => s === 'running');
-      if (runningStepIndex === -1) return;
-
-      let logPool = STEP_1_LOGS;
-      let logPrefix = "BUSCA";
-      if (runningStepIndex === 1) {
-        logPool = STEP_2_LOGS;
-        logPrefix = "FILTRO";
-      } else if (runningStepIndex === 2) {
-        logPool = STEP_3_LOGS;
-        logPrefix = "REDATOR";
-      }
-
-      if (logIndex < logPool.length) {
-        const nextLog = logPool[logIndex];
-        setTerminalLogs(prev => [
-          ...prev,
-          `[${new Date().toLocaleTimeString()}] [${logPrefix}] ${nextLog}`
-        ]);
-        logIndex++;
-      } else {
-        setTerminalLogs(prev => [
-          ...prev,
-          `[${new Date().toLocaleTimeString()}] [${logPrefix}] Processando dados avançados da etapa...`
-        ]);
-      }
-    }, 4000);
-
-    return () => clearInterval(interval);
-  }, [loading, stepStatuses]);
+  }, [loading]);
 
   const [form, setForm] = useState(() => {
     let defaultLlm = 'gemini-2.5-flash';
@@ -294,7 +226,7 @@ export function Home() {
     setClarifyLoading(true);
     setError(null);
     try {
-      const response = await fetch(`${API_URL}/api/v1/research/clarify`, {
+      const response = await authFetch(`${API_URL}/api/v1/research/clarify`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -343,6 +275,10 @@ export function Home() {
     setError(null);
     setResult(null);
     setShowModal(false);
+    setTerminalLogs([
+      `[${new Date().toLocaleTimeString()}] [SISTEMA] Inicializando pipeline de agentes do AcademiaGenius...`,
+      `[${new Date().toLocaleTimeString()}] [SISTEMA] Conectando com o provedor de IA selecionado...`,
+    ]);
 
     try {
       setStepStatuses(['running', 'idle', 'idle']);
@@ -353,7 +289,7 @@ export function Home() {
         const formData = new FormData();
         allFiles.forEach(f => formData.append('files', f));
         try {
-          const extractRes = await fetch(`${API_URL}/api/v1/extract_text`, {
+          const extractRes = await authFetch(`${API_URL}/api/v1/extract_text`, {
             method: 'POST',
             body: formData
           });
@@ -391,21 +327,62 @@ export function Home() {
         clarifications: Object.keys(clarificationsAnswers).length > 0 ? clarificationsAnswers : undefined,
       };
 
-      const response = await fetch(`${API_URL}/api/v1/research`, {
+      const response = await authFetch(`${API_URL}/api/v1/research/stream`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
 
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.detail || 'Erro desconhecido na API.');
+      if (!response.ok) {
+        const errData = await response.json();
+        throw new Error(errData.detail || 'Erro desconhecido na API.');
+      }
 
-      if (data.steps_log) applyStepsLog(data.steps_log);
-      else setStepStatuses(['done', 'done', 'done']);
+      if (!response.body) throw new Error('Streaming não suportado pelo servidor.');
 
-      setResult(data as ResearchResult);
-      setRefinement('');
-      setRefinementFiles([]);
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      outer: while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() ?? '';
+
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue;
+          let event: any;
+          try { event = JSON.parse(line.slice(6)); } catch { continue; }
+
+          if (event.type === 'progress') {
+            const { step, status, message } = event.event;
+            setStepStatuses(prev => {
+              const next = [...prev] as StepStatus[];
+              next[step - 1] = status as StepStatus;
+              return next;
+            });
+            if (message) {
+              const prefixes = ['BUSCA', 'EXTRAÇÃO', 'REDATOR'];
+              const prefix = prefixes[step - 1] ?? 'AGENTE';
+              setTerminalLogs(prev => [
+                ...prev,
+                `[${new Date().toLocaleTimeString()}] [${prefix}] ${message}`,
+              ]);
+            }
+          } else if (event.type === 'done') {
+            applyStepsLog(event.result.steps_log);
+            setResult(event.result as ResearchResult);
+            setRefinement('');
+            setRefinementFiles([]);
+            break outer;
+          } else if (event.type === 'error') {
+            throw new Error(event.detail);
+          }
+        }
+      }
     } catch (err: any) {
       setError(err.message || 'Não foi possível conectar ao servidor.');
       setStepStatuses(['idle', 'idle', 'idle']);
@@ -415,9 +392,19 @@ export function Home() {
   };
 
   const [projectSaved, setProjectSaved] = useState(false);
+  const [projectSaving, setProjectSaving] = useState(false);
+  const [copied, setCopied] = useState(false);
 
-  const handleSaveProject = () => {
+  const handleCopy = () => {
     if (!result) return;
+    navigator.clipboard.writeText(result.document);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleSaveProject = async () => {
+    if (!result || projectSaving) return;
+    setProjectSaving(true);
     const dataHora = new Date().toLocaleString('pt-BR', {
       day: '2-digit', month: '2-digit', year: 'numeric',
       hour: '2-digit', minute: '2-digit'
@@ -432,7 +419,8 @@ export function Home() {
       result.stats
     );
     prj.tema_pesquisa = form.theme;
-    saveProject(prj);
+    await saveProject(prj);
+    setProjectSaving(false);
     setProjectSaved(true);
     setSaveCount(s => s + 1);
     setTimeout(() => setProjectSaved(false), 3000);
@@ -493,7 +481,7 @@ export function Home() {
   const handleDownloadDocx = async () => {
     if (!result) return;
     try {
-      const response = await fetch(`${API_URL}/api/v1/export/docx`, {
+      const response = await authFetch(`${API_URL}/api/v1/export/docx`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -715,8 +703,17 @@ export function Home() {
                     <span className="font-serif-academic font-bold text-[#C5A880] text-sm shrink-0">[{i + 1}]</span>
                     <div>
                       <p className="text-sm font-serif-academic font-bold text-slate-800 leading-snug">{paper.title}</p>
-                      <p className="text-xs text-slate-500 mt-1">
-                        <span className="italic font-serif-academic text-slate-600">{paper.authors}</span> · {paper.year} · <span className="font-mono text-[10px] bg-slate-50 border border-slate-200/60 px-1.5 py-0.5 rounded text-slate-500">{paper.citation_count} citações</span>
+                      <p className="text-xs text-slate-500 mt-1 flex items-center gap-2 flex-wrap">
+                        <span className="italic font-serif-academic text-slate-600">{paper.authors}</span>
+                        <span>·</span>
+                        <span>{paper.year}</span>
+                        <span>·</span>
+                        <span className="font-mono text-[10px] bg-slate-50 border border-slate-200/60 px-1.5 py-0.5 rounded text-slate-500">{paper.citation_count} citações</span>
+                        {paper.source && (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded border font-semibold bg-indigo-50 border-indigo-200 text-indigo-600">
+                            {paper.source}
+                          </span>
+                        )}
                       </p>
                     </div>
                   </div>
@@ -771,7 +768,15 @@ export function Home() {
                         className="block w-full text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:font-semibold file:bg-slate-100 file:text-slate-800 hover:file:bg-slate-200 cursor-pointer"
                         onChange={(e) => {
                           if (e.target.files) {
-                            setRefinementFiles(Array.from(e.target.files));
+                            const files = Array.from(e.target.files);
+                            const oversized = files.filter(f => f.size > 20 * 1024 * 1024);
+                            if (oversized.length > 0) {
+                              setError(`Arquivo(s) muito grande(s): ${oversized.map(f => f.name).join(', ')}. Limite: 20 MB por arquivo.`);
+                              e.target.value = '';
+                            } else {
+                              setError(null);
+                              setRefinementFiles(files);
+                            }
                           }
                         }} />
                       {refinementFiles.length > 0 && (
@@ -790,20 +795,30 @@ export function Home() {
 
             {/* Ações de Documento */}
             <div className="border-t border-slate-200/60 px-8 py-5 bg-slate-50/50 flex gap-3 flex-wrap items-center">
-              <button onClick={() => navigator.clipboard.writeText(result.document)}
-                className="text-xs font-bold tracking-wider uppercase border border-slate-200 text-slate-700 px-5 py-2.5 rounded-xl hover:bg-slate-100 transition active:scale-[0.98] bg-white">
-                Copiar Texto
+              <button onClick={handleCopy}
+                className={`text-xs font-bold tracking-wider uppercase border px-5 py-2.5 rounded-xl transition active:scale-[0.98] bg-white ${copied ? 'border-green-300 text-green-700 bg-green-50' : 'border-slate-200 text-slate-700 hover:bg-slate-100'}`}>
+                {copied ? 'Copiado ✓' : 'Copiar Texto'}
               </button>
               <button onClick={handleDownloadDocx}
                 className="text-xs font-bold tracking-wider uppercase bg-slate-900 text-white px-5 py-2.5 rounded-xl hover:bg-slate-800 transition flex items-center gap-1.5 active:scale-[0.98]">
                 <Download className="w-4 h-4 text-[#C5A880]" />
                 Baixar DOCX
               </button>
-              <button onClick={handleSaveProject}
-                className="text-xs font-bold tracking-wider uppercase border border-slate-200 text-slate-700 px-5 py-2.5 rounded-xl hover:bg-slate-100 transition flex items-center gap-1.5 bg-white active:scale-[0.98]">
-                <FolderPlus className="w-4 h-4 text-slate-500" />
-                {projectSaved ? 'Versão Salva ✓' : 'Salvar Versão'}
-              </button>
+              {projectSaved ? (
+                <div className="flex items-center gap-2 border border-green-300 bg-green-50 text-green-800 px-4 py-2.5 rounded-xl text-xs font-bold">
+                  <CheckCircle className="w-4 h-4 text-green-600" />
+                  Versão Salva ✓
+                  <Link to="/projects" className="underline text-green-700 hover:text-green-900 ml-1">
+                    Ver em Projetos →
+                  </Link>
+                </div>
+              ) : (
+                <button onClick={handleSaveProject} disabled={projectSaving}
+                  className="text-xs font-bold tracking-wider uppercase border border-slate-200 text-slate-700 px-5 py-2.5 rounded-xl hover:bg-slate-100 transition flex items-center gap-1.5 bg-white active:scale-[0.98] disabled:opacity-60">
+                  {projectSaving ? <Loader2 className="w-4 h-4 animate-spin text-slate-500" /> : <FolderPlus className="w-4 h-4 text-slate-500" />}
+                  {projectSaving ? 'Salvando...' : 'Salvar Versão'}
+                </button>
+              )}
               
               <div className="ml-auto flex gap-3">
                 <button onClick={openNotebookAI}
@@ -850,7 +865,15 @@ export function Home() {
                     className="block w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-slate-100 file:text-slate-800 hover:file:bg-slate-200 cursor-pointer"
                     onChange={(e) => {
                       if (e.target.files) {
-                        setAttachedFiles(Array.from(e.target.files));
+                        const files = Array.from(e.target.files);
+                        const oversized = files.filter(f => f.size > 20 * 1024 * 1024);
+                        if (oversized.length > 0) {
+                          setError(`Arquivo(s) muito grande(s): ${oversized.map(f => f.name).join(', ')}. Limite: 20 MB por arquivo.`);
+                          e.target.value = '';
+                        } else {
+                          setError(null);
+                          setAttachedFiles(files);
+                        }
                       }
                     }} />
                   {attachedFiles.length > 0 && (

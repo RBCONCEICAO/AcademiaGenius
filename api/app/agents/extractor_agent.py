@@ -33,12 +33,15 @@ def extract_knowledge(
     # Monta o corpus de abstracts para análise
     abstracts_text = ""
     for i, paper in enumerate(papers, 1):
+        abstract = paper['abstract']
+        if len(abstract) > 600:
+            abstract = abstract[:600] + "..."
         abstracts_text += (
             f"\n--- Artigo {i} ---\n"
             f"Título: {paper['title']}\n"
             f"Autores: {paper['authors']}\n"
             f"Ano: {paper['year']}\n"
-            f"Abstract: {paper['abstract']}\n"
+            f"Abstract: {abstract}\n"
         )
 
     prompt = f"""Você é um pesquisador acadêmico especialista em revisão sistemática de literatura.
