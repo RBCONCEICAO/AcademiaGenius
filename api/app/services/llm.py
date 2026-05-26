@@ -152,14 +152,33 @@ def generate_free_fallback_content(_provider: str, _model: str, prompt: str, tas
              "type": "choice", "options": ["Últimos 5 anos (2020–2025)", "Clássicos + recentes (sem limite)", "Sem restrição temporal"]},
         ]}, ensure_ascii=False)
 
-    # 3. Filtro semântico — manter todos os papers (fallback conservador)
+    # 3. Filtro semântico — relevância por sobreposição de palavras-chave do tema
     elif "filtro semântico" in prompt.lower() or "validador de relevância" in prompt.lower():
         try:
             payload = json.loads(re.search(r'\[\s*\{.*?\}\s*\]', prompt, re.DOTALL).group(0))
-            return json.dumps({"results": [
-                {"id": p["id"], "decision": "keep", "reason": "Relevante ao domínio."}
-                for p in payload
-            ]}, ensure_ascii=False)
+            theme_match = re.search(r'Tema de Pesquisa do Usuário:\s*(.+?)(?:\n|$)', prompt, re.IGNORECASE)
+            theme_raw = theme_match.group(1).strip() if theme_match else ""
+
+            _STOPWORDS = {
+                "de","da","do","das","dos","em","no","na","nos","nas","com","para","por",
+                "que","uma","um","os","as","ao","aos","às","se","sua","seu","suas","seus",
+                "the","of","in","and","or","to","a","an","for","with","on","at","from",
+                "is","are","was","were","be","been","being","have","has","had","this","that",
+            }
+            def _keywords(text: str) -> set:
+                return {w.lower() for w in re.findall(r'\b\w{4,}\b', text) if w.lower() not in _STOPWORDS}
+
+            theme_kws = _keywords(theme_raw)
+
+            results = []
+            for p in payload:
+                paper_text = f"{p.get('title', '')} {p.get('abstract', '')}"
+                paper_kws  = _keywords(paper_text)
+                overlap    = len(theme_kws & paper_kws)
+                decision   = "keep" if (not theme_kws or overlap >= 1) else "discard"
+                results.append({"id": p["id"], "decision": decision,
+                                 "reason": f"{overlap} palavras-chave em comum com o tema."})
+            return json.dumps({"results": results}, ensure_ascii=False)
         except Exception:
             return json.dumps({"results": []}, ensure_ascii=False)
 
